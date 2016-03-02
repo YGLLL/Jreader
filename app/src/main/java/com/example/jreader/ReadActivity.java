@@ -158,7 +158,7 @@ public class ReadActivity extends Activity implements OnClickListener,
         scale = (int)mContext.getResources().getDisplayMetrics().density;
         //Log.d("ReadActivity","scaleis"+scale);
         //初始化语音
-        SpeechUtility.createUtility(ReadActivity.this, SpeechConstant.APPID +"=5695a8b4");//创建语音配置对象
+        SpeechUtility.createUtility(ReadActivity.this, SpeechConstant.APPID +"");//创建语音配置对象，此处已省去APPID
         mTts = SpeechSynthesizer.createSynthesizer(ReadActivity.this,mTtsInitListener);//初始化合成对象
         mCloudVoicersEntries = getResources().getStringArray(R.array.voicer_cloud_entries);
         mCloudVoicersValue = getResources().getStringArray(R.array.voicer_cloud_values);
