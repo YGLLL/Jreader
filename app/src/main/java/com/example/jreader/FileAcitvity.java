@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.jreader.adapter.FileAdapter;
+import com.example.jreader.database.BookCatalogue;
 import com.example.jreader.database.BookList;
 import com.example.jreader.util.Fileutil;
 
@@ -77,7 +78,7 @@ public class FileAcitvity extends AppCompatActivity {
 
         String storageState = Environment.getExternalStorageState();
 
-    /**    if (storageState.equals(Environment.MEDIA_MOUNTED)) {
+    /** if (storageState.equals(Environment.MEDIA_MOUNTED)) {
             root = new File(Environment.getExternalStorageDirectory()
                     .getAbsolutePath());
         } else {
@@ -266,7 +267,6 @@ public class FileAcitvity extends AppCompatActivity {
             @Override
             protected Boolean doInBackground(Void... params) {
 
-
                 try {
                     //   List<BookList> bookLists1 = DataSupport.findAll(BookList.class);
                     String sql = "SELECT id FROM booklist WHERE bookname =? and bookpath =?";
@@ -296,6 +296,8 @@ public class FileAcitvity extends AppCompatActivity {
 
         });
     }
+
+
     /**
      * 添加路径到堆栈
      *

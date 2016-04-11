@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -13,6 +14,9 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.example.jreader.ReadActivity;
+import com.example.jreader.database.BookCatalogue;
+
+import org.litepal.crud.DataSupport;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,6 +27,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -42,9 +48,12 @@ public class BookPageFactory {
     private int m_mbBufEnd = 0;// 当前页终点位置
 
     private static int m_mbBufLen = 0; // 图书总长度
-
+    private static List<String> bookCatalogue = new ArrayList<>();
+    private static List<Integer> bookCatalogueStartPos = new ArrayList<>();
     private String m_strCharsetName = "GBK";
-
+    private Boolean isfirstTitle = true;
+    int BufEnd = 0;
+    private int mstartpos = 0;
     private int m_textColor = Color.rgb(50, 65, 78);
 
     private int marginHeight = 15; // 上下与边缘的距离
@@ -130,6 +139,7 @@ public class BookPageFactory {
             m_mbBufEnd = begin;
         } else {
         }
+       // getBookInfo();
     }
 
     /**
@@ -151,13 +161,18 @@ public class BookPageFactory {
                 Log.e(TAG, "pageDown->转换编码失败", e);
             }
             String strReturn = "";
-            // 替换掉回车换行符
-            if (strParagraph.indexOf("\r\n") != -1) {
+            // 替换掉回车换行符,防止段落发生错乱
+            if (strParagraph.indexOf("\r\n") != -1) {   //windows
                 strReturn = "\r\n";
                 strParagraph = strParagraph.replaceAll("\r\n", "");
-            } else if (strParagraph.indexOf("\n") != -1) {
+            } else if (strParagraph.indexOf("\n") != -1) {    //linux
                 strReturn = "\n";
                 strParagraph = strParagraph.replaceAll("\n", "");
+            }
+
+            if(strParagraph.contains("第")&&strParagraph.contains("章")) {
+               String s = strParagraph;
+               // Log.d("测试章节----->",strParagraph);
             }
 
             if (strParagraph.length() == 0) {
@@ -171,10 +186,11 @@ public class BookPageFactory {
                 strParagraph = strParagraph.substring(nSize);// 得到剩余的文字
                 // 超出最大行数则不再画
                 if (lines.size() >= mLineCount) {
+
                     break;
                 }
             }
-            // 如果该页最后一段只显示了一部分，则从新定位结束点位置
+            // 如果该页最后一段只显示了一部分，则重新定位结束点位置
             if (strParagraph.length() != 0) {
                 try {
                     m_mbBufEnd -= (strParagraph + strReturn)
@@ -187,6 +203,52 @@ public class BookPageFactory {
         return lines;
     }
 
+    /**
+    *   提取章节目录及值
+     */
+    public void getBookInfo() {
+        String strParagraph = "";
+        while (mstartpos < m_mbBufLen-1) {
+            byte[] paraBuf = readParagraphForward(mstartpos);
+            mstartpos += paraBuf.length;// 每次读取后，记录结束点位置，该位置是段落结束位置
+            try {
+                strParagraph = new String(paraBuf, m_strCharsetName);// 转换成制定GBK编码
+            } catch (UnsupportedEncodingException e) {
+                Log.e(TAG, "pageDown->转换编码失败", e);
+            }
+
+            String strReturn = "";
+            // 替换掉回车换行符,防止段落发生错乱
+            if (strParagraph.indexOf("\r\n") != -1) {   //windows
+                strReturn = "\r\n";
+                strParagraph = strParagraph.replaceAll("\r\n", "");
+            } else if (strParagraph.indexOf("\n") != -1) {    //linux
+                strReturn = "\n";
+                strParagraph = strParagraph.replaceAll("\n", "");
+            }
+
+            if(strParagraph.contains("第") && strParagraph.contains("章")) {
+                int m_mstartpos = mstartpos-paraBuf.length;//获得章节段落开始位置
+                BookCatalogue bookCatalogue1 = new BookCatalogue();//每次保存后都要新建一个
+                strParagraph = strParagraph.trim();//去除字符串前后空格
+                //去除全角空格
+                while (strParagraph.startsWith("　")) {
+                    strParagraph = strParagraph.substring(1, strParagraph.length()).trim();
+                }
+                bookCatalogue.add(strParagraph);   //保存到数组
+                bookCatalogueStartPos.add(m_mstartpos);
+                bookCatalogue1.setBookCatalogue(strParagraph);  //保存到数据库
+                bookCatalogue1.setBookCatalogueStartPos(m_mstartpos);
+                bookCatalogue1.setBookpath(ReadActivity.getBookPath());
+                String sql = "SELECT id FROM bookcatalogue WHERE bookcatalogue =? and bookCatalogueStartPos =?";
+                Cursor cursor = DataSupport.findBySQL(sql,strParagraph,m_mstartpos +"");
+                if(!cursor.moveToFirst()) {
+                    bookCatalogue1.save();
+                }
+            }
+        }
+      //  return bookCatalogue;
+    }
     /**
      * 得到上上页的结束位置
      */
@@ -361,7 +423,7 @@ public class BookPageFactory {
                 }
             }
         }
-        int nParaSize = i - nStart;
+        int nParaSize = i - nStart; //段落长度
         byte[] buf = new byte[nParaSize];
         for (i = 0; i < nParaSize; i++) {
             buf[i] = m_mbBuf.get(nFromPos + i);
@@ -519,4 +581,11 @@ public class BookPageFactory {
         return m_islastPage;
     }
 
+    public static List<Integer> getBookCatalogueStartPos() {
+        return bookCatalogueStartPos;
+    }
+
+    public static List<String> getBookCatalogue() {
+        return bookCatalogue;
+    }
 }

@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PixelFormat;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -33,6 +34,7 @@ import com.example.jreader.animation.Rotate3DAnimation;
 import com.example.jreader.database.BookList;
 import com.example.jreader.database.BookMarks;
 import com.example.jreader.util.BookInformation;
+
 
 import org.litepal.crud.DataSupport;
 import org.litepal.tablemanager.Connector;
@@ -72,6 +74,12 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            //透明状态栏
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            //透明导航栏
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        }
         setContentView(R.layout.activity_main1);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);                            //toolbar当actionbar使用
@@ -82,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
         pop=new PopupWindow(wmRootView, AbsoluteLayout.LayoutParams.MATCH_PARENT,AbsoluteLayout.LayoutParams.MATCH_PARENT,false);
         rootView = getWindow().getDecorView();
         linearLayout = (LinearLayout) findViewById(R.id.bookItemLinearLayout);
+
 
         SQLiteDatabase db = Connector.getDatabase();  //初始化数据库
         ReadActivity.sp = getSharedPreferences("config", MODE_PRIVATE);//在这里初始化preferences防止未打开过书就删除书报的错误
@@ -147,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
                     }
 
                 }
-                return false;
+                return true;  //返回true onItemClick不会再调用
                 }
 
         });

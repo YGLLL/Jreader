@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import com.astuetz.PagerSlidingTabStrip;
 import com.example.jreader.adapter.MyPagerAdapter;
+import com.example.jreader.database.BookCatalogue;
 
 /**
  * Created by Administrator on 2016/1/6.

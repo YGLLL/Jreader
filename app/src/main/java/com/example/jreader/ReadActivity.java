@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.database.SQLException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,6 +17,8 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -39,6 +42,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.jreader.database.BookCatalogue;
 import com.example.jreader.database.BookMarks;
 import com.example.jreader.util.BookPageFactory;
 import com.example.jreader.util.CommonUtil;
@@ -51,10 +55,17 @@ import com.iflytek.cloud.SpeechSynthesizer;
 import com.iflytek.cloud.SpeechUtility;
 import com.iflytek.cloud.SynthesizerListener;
 
+
+import org.litepal.crud.DataSupport;
+import org.litepal.exceptions.DataSupportException;
+
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.zip.DataFormatException;
 
 /**
  * Created by Administrator on 2016/1/3.
@@ -71,7 +82,7 @@ public class ReadActivity extends Activity implements OnClickListener,
     private static String word = "";// 记录当前页面的文字
     private int a = 0, b = 0;// 记录toolpop的位置
     private TextView bookBtn1, bookBtn2, bookBtn3, bookBtn4;
-    private String bookPath,bookName;// 记录读入书的路径及书名
+    private static String bookPath,bookName;// 记录读入书的路径及书名
     private String ccc = null;// 记录是否为快捷方式调用
     protected long count = 1;
     public static SharedPreferences.Editor editor;
@@ -124,6 +135,9 @@ public class ReadActivity extends Activity implements OnClickListener,
     private String[] mCloudVoicersValue ;
     private int selectedNum = 0;//选择导入书架的书本数量
     private AudioManager audio;
+    private List<String> bookCatalogueList;
+    private List<Integer> bookCatalogueStartPosList;
+    protected List<AsyncTask<Void, Void, Boolean>> myAsyncTasks = new ArrayList<AsyncTask<Void, Void, Boolean>>();
     // 实例化Handler
     public Handler mHandler = new Handler() {
         // 接收子线程发来的消息，同时更新UI
@@ -158,7 +172,7 @@ public class ReadActivity extends Activity implements OnClickListener,
         scale = (int)mContext.getResources().getDisplayMetrics().density;
         //Log.d("ReadActivity","scaleis"+scale);
         //初始化语音
-        SpeechUtility.createUtility(ReadActivity.this, SpeechConstant.APPID +"");//创建语音配置对象，此处已省去APPID
+        SpeechUtility.createUtility(ReadActivity.this, SpeechConstant.APPID +"=5695a8b4");//创建语音配置对象
         mTts = SpeechSynthesizer.createSynthesizer(ReadActivity.this,mTtsInitListener);//初始化合成对象
         mCloudVoicersEntries = getResources().getStringArray(R.array.voicer_cloud_entries);
         mCloudVoicersValue = getResources().getStringArray(R.array.voicer_cloud_values);
@@ -187,6 +201,8 @@ public class ReadActivity extends Activity implements OnClickListener,
         RelativeLayout rlayout = (RelativeLayout) findViewById(R.id.readlayout);
         rlayout.addView(mPageWidget);
 
+        BookCatalogue bookCatalogue = new BookCatalogue();
+        bookCatalogue.setBookCatalogue("第一章 死亡");
 
         //获得系统menu显示,在5.1系统失效
         /**try {
@@ -236,7 +252,7 @@ public class ReadActivity extends Activity implements OnClickListener,
             Bitmap bmp=Bitmap.createBitmap(screenWidth,screenHeight, Bitmap.Config.RGB_565);
             Canvas canvas=new Canvas(bmp);
             canvas.drawColor(Color.rgb(250, 249, 222));
-            pagefactory.setM_textColor(Color.rgb(50, 65, 78));
+            pagefactory.setM_textColor(getResources().getColor(R.color.read_textColor));
             pagefactory.setBgBitmap(bmp);
          //   pagefactory.setM_textColor(Color.rgb(28, 28, 28));
         }
@@ -248,7 +264,14 @@ public class ReadActivity extends Activity implements OnClickListener,
             // Log.d("ReadActivity", "sp中的size" + size);
             word = pagefactory.getFirstTwoLineText();// 获取当前阅读位置的前两行文字,用作书签
             editor.putInt(bookPath + "begin", begin).apply();
-            Log.d("ReadActivity","第一页首两行文字是"+word);
+            Log.d("ReadActivity", "第一页首两行文字是" + word);
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    pagefactory.getBookInfo();
+                }
+            }).start();
         } catch (IOException e1) {
             Log.e(TAG, "打开电子书失败", e1);
             Toast.makeText(this, "打开电子书失败", Toast.LENGTH_SHORT).show();
@@ -432,6 +455,21 @@ public class ReadActivity extends Activity implements OnClickListener,
             // 书签按钮
             case R.id.bookBtn_mark:
                 a = 3;
+                bookCatalogueList = BookPageFactory.getBookCatalogue();
+                bookCatalogueStartPosList = BookPageFactory.getBookCatalogueStartPos();
+                for(int i = 0;i<bookCatalogueList.size()-1;i++) {
+                    BookCatalogue bookCatalogue = new BookCatalogue();
+                    String catalogue = bookCatalogueList.get(i);
+                    int cataloguepos = bookCatalogueStartPosList.get(i);
+                  //  Log.d("catalogue---->", catalogue);
+                  //  Log.d("cataloguepos---->", cataloguepos + "");
+                  //     bookCatalogue.setBookCatalogue(catalogue);
+                 //   bookCatalogue.setBookCatalogueStartPos(cataloguepos);
+                 //   bookCatalogue.setBookpath(bookPath);
+                   // bookCatalogue.save();
+                 //   saveCatalogueToSqlite3(catalogue, cataloguepos, bookCatalogue);
+                }
+
                 setToolPop(a);
                 break;
             // 跳转按钮
@@ -475,6 +513,10 @@ public class ReadActivity extends Activity implements OnClickListener,
             // 添加书签按钮
             case R.id.Btn_mark_add:
               //  SQLiteDatabase db = markhelper.getWritableDatabase();
+                word = word.trim();
+                while (word.startsWith("　")) {
+                    word = word.substring(1, word.length()).trim();
+                }
                 BookMarks bookMarks = new BookMarks();
                 try {
                     SimpleDateFormat sf = new SimpleDateFormat(
@@ -504,6 +546,7 @@ public class ReadActivity extends Activity implements OnClickListener,
                 startActivity(intent);
                 mPopupWindow.dismiss();
                 popDismiss();
+
                 break;
             //跳转确定按钮
             case R.id.jump_ok:
@@ -1051,7 +1094,7 @@ public class ReadActivity extends Activity implements OnClickListener,
         try {
             pagefactory.currentPage();
             begin = pagefactory.getM_mbBufBegin();// 获取当前阅读位置
-            word = pagefactory.getFirstTwoLineText();// 获取当前阅读位置的首行文字
+            word = pagefactory.getFirstTwoLineText();// 获取当前阅读位置的首两行文字
         } catch (IOException e1) {
             Log.e(TAG, "postInvalidateUI->IOException error", e1);
         }
@@ -1075,7 +1118,7 @@ public class ReadActivity extends Activity implements OnClickListener,
         //设置合成音调
         mTts.setParameter(SpeechConstant.PITCH,  "50");
         //设置合成音量
-        mTts.setParameter(SpeechConstant.VOLUME,  "30");
+        mTts.setParameter(SpeechConstant.VOLUME,  "50");
 
         // 设置播放合成音频打断音乐播放，默认为true
         mTts.setParameter(SpeechConstant.KEY_REQUEST_FOCUS, "true");
@@ -1174,9 +1217,12 @@ public class ReadActivity extends Activity implements OnClickListener,
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                      //  | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                        //  | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
                         | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
-                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                      //  | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                      //  | View.SYSTEM_UI_FLAG_IMMERSIVE
+                        );
     }
 
     private void showSystemUI() {
@@ -1291,5 +1337,47 @@ public class ReadActivity extends Activity implements OnClickListener,
 
     }
 
+    public static String getBookPath() {
+        return bookPath;
+    }
 
+    public void putAsyncTask(AsyncTask<Void, Void, Boolean> asyncTask) {
+        myAsyncTasks.add(asyncTask.execute());
+    }
+
+    public void saveCatalogueToSqlite3(final String catalogue, final Integer pos,final BookCatalogue bookCatalogue) {
+
+        putAsyncTask(new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            protected void onPreExecute() {
+
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                  //  String sql = "SELECT id FROM bookcatalogue WHERE bookcatalogue =? and bookCatalogueStartPos =?";
+                  //  Cursor cursor = DataSupport.findBySQL(sql, catalogue,pos+"");
+                  //  if (!cursor.moveToFirst()) {
+                        bookCatalogue.saveThrows();
+                    Log.d("保存次数测试", "成功");
+                  //  } else {
+                    //    return false;
+                  //  }
+                } catch (DataSupportException e) {
+                     return false;
+                }
+                return true;
+            }
+
+            @Override
+            protected void onPostExecute(Boolean result) {
+                if(result) {
+
+                }else {
+                    Log.d("保存到数据库结果-->","失败");
+                }
+            }
+        });
+    }
 }

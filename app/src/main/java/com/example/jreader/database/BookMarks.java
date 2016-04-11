@@ -29,7 +29,7 @@ public class BookMarks extends DataSupport {
         this.text = text;
     }
 
-       public String getTime() {
+    public String getTime() {
         return this.time;
     }
 

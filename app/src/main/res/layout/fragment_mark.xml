@@ -3,12 +3,11 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical"
-              >
+              android:background="@color/read_background">
     <ListView
         android:id="@+id/marklistview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/background_color"
         android:divider="@color/list_item_divider"
         android:dividerHeight="1dp" />
 
