@@ -143,7 +143,7 @@ public  class  FileAdapter extends BaseAdapter {
                 }
 
                     FileAcitvity.dataChanged();
-                    Log.d("FileAdapter",p + "");
+                  //  Log.d("FileAdapter",p + "");
             }
         });
 

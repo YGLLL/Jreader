@@ -29,7 +29,7 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <com.example.jreader.view.MyGridView
+    <com.example.jreader.view.DragGridView
         android:id="@+id/bookShelf"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"

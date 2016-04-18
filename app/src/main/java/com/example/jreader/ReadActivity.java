@@ -43,6 +43,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.jreader.database.BookCatalogue;
+import com.example.jreader.database.BookList;
 import com.example.jreader.database.BookMarks;
 import com.example.jreader.util.BookPageFactory;
 import com.example.jreader.util.CommonUtil;
@@ -63,6 +64,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.zip.DataFormatException;
@@ -71,7 +73,7 @@ import java.util.zip.DataFormatException;
  * Created by Administrator on 2016/1/3.
  */
 public class ReadActivity extends Activity implements OnClickListener,
-        SeekBar.OnSeekBarChangeListener {
+        SeekBar.OnSeekBarChangeListener,itemMoveToFirst {
     private LinearLayout layout;
     private AlertDialog dialog;
     private static final String TAG = "Read2";
@@ -138,6 +140,8 @@ public class ReadActivity extends Activity implements OnClickListener,
     private List<String> bookCatalogueList;
     private List<Integer> bookCatalogueStartPosList;
     protected List<AsyncTask<Void, Void, Boolean>> myAsyncTasks = new ArrayList<AsyncTask<Void, Void, Boolean>>();
+    private int openPosition;
+
     // 实例化Handler
     public Handler mHandler = new Handler() {
         // 接收子线程发来的消息，同时更新UI
@@ -232,6 +236,7 @@ public class ReadActivity extends Activity implements OnClickListener,
         Intent intent = getIntent();
         bookPath = intent.getStringExtra("bookpath");
         bookName = intent.getStringExtra("bookname");
+        openPosition = intent.getIntExtra("openposition",0);
         ccc = intent.getStringExtra("ccc");
         begin1 = intent.getIntExtra("bigin", 0);
         if(begin1 == 0) {
@@ -1245,6 +1250,81 @@ public class ReadActivity extends Activity implements OnClickListener,
 
     public static Bitmap getmNextPageBitmap() {
         return mNextPageBitmap;
+    }
+
+    @Override
+    public void itemMoeToFirst() {
+        List<BookList> bookLists1 = new ArrayList<>();
+        bookLists1 = DataSupport.findAll(BookList.class);
+        int tempId = bookLists1.get(0).getId();
+        BookList temp = bookLists1.get(openPosition);
+        Log.d("openPosition is", "" + openPosition);
+        if(openPosition!=0) {
+            for (int i = openPosition; i > 0 ; i--) {
+                List<BookList> bookListsList = new ArrayList<>();
+                bookListsList = DataSupport.findAll(BookList.class);
+                int dataBasesId = bookListsList.get(i).getId();
+
+                Collections.swap(bookLists1, i, i - 1);
+                updateBookPosition(i, dataBasesId, bookLists1);
+            }
+
+            bookLists1.set(0, temp);
+            updateBookPosition(0, tempId, bookLists1);
+            for (int j = 0 ;j<bookLists1.size();j++) {
+                String bookpath = bookLists1.get(j).getBookpath();
+                Log.d("移动到第一位",bookpath);
+            }
+        }
+    }
+
+    /**
+     * 两个item数据交换结束后，把不需要再交换的item更新到数据库中
+     * @param position
+     * @param bookLists
+     */
+    public void updateBookPosition (int position,int databaseId,List<BookList> bookLists) {
+        BookList bookList = new BookList();
+        BookList bookList1 = new BookList();
+        String bookpath = bookLists.get(position).getBookpath();
+        String bookname = bookLists.get(position).getBookname();
+        bookList.setBookpath(bookpath);
+        bookList1.setBookname(bookname);
+        //开线程保存改动的数据到数据库
+        //使用litepal数据库框架update时每次只能update一个id中的一条信息，如果相同则不更新。
+        upDateBookToSqlite3(databaseId, bookList, bookList1);
+    }
+
+
+    public void upDateBookToSqlite3(final int databaseId,final BookList bookList,final BookList bookList1) {
+
+        putAsyncTask(new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            protected void onPreExecute() {
+
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    bookList.update(databaseId);
+                    bookList1.update(databaseId);
+                    Log.d("是否执行到保存数据库","这里");
+                } catch (DataSupportException e) {
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            protected void onPostExecute(Boolean result) {
+                if (result) {
+
+                } else {
+                    Log.d("保存到数据库结果-->", "失败");
+                }
+            }
+        });
     }
 
     @Override

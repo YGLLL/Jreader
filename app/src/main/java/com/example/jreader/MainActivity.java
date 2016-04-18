@@ -10,12 +10,14 @@ import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.ViewDragHelper;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
@@ -34,6 +36,8 @@ import com.example.jreader.animation.Rotate3DAnimation;
 import com.example.jreader.database.BookList;
 import com.example.jreader.database.BookMarks;
 import com.example.jreader.util.BookInformation;
+import com.example.jreader.view.DragGridView;
+import com.example.jreader.view.MyDrawerLayout;
 
 
 import org.litepal.crud.DataSupport;
@@ -43,10 +47,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements Animation.AnimationListener {
-    private GridView bookShelf;
+    private DragGridView bookShelf;
     private GridView gv;
     private ArrayList<BookInformation> bilist;
-    private DrawerLayout drawerLayout;
+    private MyDrawerLayout drawerLayout;
     private NavigationView navigationView;
     private List<BookList> bookLists;
     private boolean isShowDelete = false;  //是否显示删除图标
@@ -71,6 +75,10 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
     private int animationCount=0;  //动画加载计数器  0 默认  1一个动画执行完毕   2二个动画执行完毕
     private int bookViewPosition;
     private LinearLayout linearLayout;
+    private ShelfAdapter adapter;
+    private itemMoveToFirst mitemMoveToFirst;
+    private ReadActivity readActivity;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
 
         SQLiteDatabase db = Connector.getDatabase();  //初始化数据库
         ReadActivity.sp = getSharedPreferences("config", MODE_PRIVATE);//在这里初始化preferences防止未打开过书就删除书报的错误
-        bookShelf = (GridView) findViewById(R.id.bookShelf);
+        bookShelf = (DragGridView) findViewById(R.id.bookShelf);
         ActivityManager activityManager=(ActivityManager)MainActivity.this.getSystemService(Context.ACTIVITY_SERVICE);
         int memoryClass = activityManager.getMemoryClass();// 返回的就是本机给每个app分配的运行内存
 
@@ -104,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
             String a = bookLists.get(i).getBookname();
          //   Log.d("MainActivity","是否取出全部数据库数据"+a);
         }
-        final ShelfAdapter adapter = new ShelfAdapter(MainActivity.this,bookLists);
+        adapter = new ShelfAdapter(MainActivity.this,bookLists);
         bookShelf.setAdapter(adapter);
         initNavigationView();
 
@@ -129,43 +137,52 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
                         bookShelf.setAdapter(adapter);
                         adapter.notifyDataSetChanged();
                     } else {
-                          //  openBookIn();
+                        //  openBookIn();
                         //  if(mIsOpen) {
-                              setBookViewPosition(position);
-                              String bookpath = bookLists.get(position).getBookpath();
-                              String bookname = bookLists.get(position).getBookname();
-                              Intent intent = new Intent();
-                              intent.setClass(MainActivity.this, ReadActivity.class);
-                              intent.putExtra("bookpath", bookpath);
-                              intent.putExtra("bookname", bookname);
-                              startActivity(intent);
+                        setBookViewPosition(position);
+                        adapter.setItemToFirst(position);
+                        String bookpath = bookLists.get(position).getBookpath();
+                        String bookname = bookLists.get(position).getBookname();
+                        Intent intent = new Intent();
+                        intent.setClass(MainActivity.this, ReadActivity.class);
+                        intent.putExtra("openposition", position);
+                        intent.putExtra("bookpath", bookpath);
+                        intent.putExtra("bookname", bookname);
+                        startActivity(intent);
                         //  }
 
                     }
                 }
             }
         });
-        //长按进入删除图书逻辑
-        bookShelf.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+
+        drawerLayout.setDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                if (bookLists.size() > position) {
-                    if (!isShowDelete) {
-                        isShowDelete = true;
-                        setIsShowDelete(isShowDelete);
-                    }
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                Log.d("mainactivity", "drawerslide");
+            }
 
-                }
-                return true;  //返回true onItemClick不会再调用
-                }
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                Log.d("mainactivity", "drawerOpened");
+            }
 
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                Log.d("mainactivity", "DrawerClosed");
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+                Log.d("mainactivity", "stateChanged");
+            }
         });
 
-
     }
+
     private void initNavigationView(){
         navigationView = (NavigationView) findViewById(R.id.navigationView);
-        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawerLayout = (MyDrawerLayout) findViewById(R.id.drawer_layout);
         //设置侧滑菜单选择监听事件
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -176,6 +193,8 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
                 return true;
             }
         });
+
+
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -204,13 +223,6 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
         return super.onOptionsItemSelected(item);
     }
 
-    public void setIsShowDelete(boolean isShowDelete) {
-        this.isShowDelete = isShowDelete;
-      //  final ShelfAdapter adapter = new ShelfAdapter(MainActivity.this,bookLists);
-        //bookShelf.setAdapter(adapter);
-       // adapter.notifyDataSetChanged();
-    }
-
     @Override
     protected void onRestart(){
 
@@ -230,7 +242,22 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
 
         }
         bookShelf.setAdapter(adapter);
+
+        adapter.notifyDataSetChanged();
+        DragGridView.setIsShowDeleteButton(false);
         Log.d("MainActivity", "onResatart");
+    }
+
+    @Override
+    protected void onStop() {
+        DragGridView.setIsShowDeleteButton(false);
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        DragGridView.setIsShowDeleteButton(false);
+        super.onDestroy();
     }
 
     @Override
@@ -459,4 +486,6 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
     public int getBookViewPosition () {
         return bookViewPosition;
     }
+
+
 }
