@@ -1,6 +1,7 @@
 package com.example.jreader.adapter;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,7 @@ import android.widget.TextView;
 
 import com.example.jreader.R;
 import com.example.jreader.database.BookCatalogue;
+import com.example.jreader.util.CommonUtil;
 
 import java.util.List;
 import java.util.zip.Inflater;
@@ -20,9 +22,12 @@ import java.util.zip.Inflater;
 public class CatalogueAdapter extends BaseAdapter {
     private Context mContext;
     private List<BookCatalogue> bookCatalogueList;
+    private Typeface typeface;
+
     public CatalogueAdapter(Context context,List<BookCatalogue> bookCatalogueList) {
         mContext = context;
         this.bookCatalogueList = bookCatalogueList;
+        typeface = Typeface.createFromAsset(mContext.getAssets(),"font/QH.ttf");
     }
 
     @Override
@@ -48,6 +53,7 @@ public class CatalogueAdapter extends BaseAdapter {
             viewHolder= new ViewHolder();
             convertView = inflater.inflate(R.layout.cataloguelistview_item,null);
             viewHolder.catalogue_tv = (TextView)convertView.findViewById(R.id.catalogue_tv);
+            viewHolder.catalogue_tv.setTypeface(typeface);
             convertView.setTag(viewHolder);
         }else {
             viewHolder = (ViewHolder)convertView.getTag();

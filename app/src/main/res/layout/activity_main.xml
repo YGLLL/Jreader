@@ -23,8 +23,9 @@
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@drawable/titlebar_big"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
+            android:background="@drawable/bookshelf_header_bg"
             app:popupTheme="@style/AppTheme.PopupOverlay"/>
 
     </android.support.design.widget.AppBarLayout>
@@ -41,7 +42,7 @@
         android:numColumns="3"
         android:scrollbars="none"
         android:layout_below="@id/appbar"
-        android:verticalSpacing="10dp" />
+        android:verticalSpacing="3dp" />
     </RelativeLayout>
 
 </android.support.design.widget.CoordinatorLayout>

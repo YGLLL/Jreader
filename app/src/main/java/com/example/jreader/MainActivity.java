@@ -1,10 +1,14 @@
 package com.example.jreader;
 
+import android.animation.ObjectAnimator;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
@@ -14,21 +18,25 @@ import android.support.v4.widget.ViewDragHelper;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.widget.AbsoluteLayout;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.jreader.adapter.ShelfAdapter;
 import com.example.jreader.animation.ContentScaleAnimation;
@@ -36,8 +44,11 @@ import com.example.jreader.animation.Rotate3DAnimation;
 import com.example.jreader.database.BookList;
 import com.example.jreader.database.BookMarks;
 import com.example.jreader.util.BookInformation;
+import com.example.jreader.util.BookPageFactory;
+import com.example.jreader.util.CommonUtil;
 import com.example.jreader.view.DragGridView;
 import com.example.jreader.view.MyDrawerLayout;
+import com.example.jreader.view.MyGridView;
 
 
 import org.litepal.crud.DataSupport;
@@ -45,6 +56,8 @@ import org.litepal.tablemanager.Connector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements Animation.AnimationListener {
     private DragGridView bookShelf;
@@ -53,40 +66,46 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
     private MyDrawerLayout drawerLayout;
     private NavigationView navigationView;
     private List<BookList> bookLists;
-    private boolean isShowDelete = false;  //是否显示删除图标
     private static View rootView;
 
-    public static boolean mIsOpen;
     private WindowManager mWindowManager;
     private AbsoluteLayout wmRootView;
     private PopupWindow pop;
 
     private static TextView cover;
     private static ImageView content;
-
+    private Typeface typeface;
     private float scaleTimes;
     public static final int ANIMATION_DURATION = 1000;
     private int[] location = new int[2];
-
+    //private int[] firstLocation = new int[2];
     private static ContentScaleAnimation contentAnimation;
     private static Rotate3DAnimation coverAnimation;
 
     private static boolean isFirstload = true;
     private int animationCount=0;  //动画加载计数器  0 默认  1一个动画执行完毕   2二个动画执行完毕
+    private boolean mIsOpen = false;
     private int bookViewPosition;
     private LinearLayout linearLayout;
     private ShelfAdapter adapter;
-    private itemMoveToFirst mitemMoveToFirst;
-    private ReadActivity readActivity;
+    private static Boolean isExit = false;
+    private ImageButton deleteItem_IB;
+    private int itemPosition;
+    private TextView itemTextView;
+    private TextView firstItemTextView;
+    private View itemView;
+    private View firstView;
+    private Bitmap coverBitmap;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             //透明状态栏
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+          //  getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
             //透明导航栏
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+          //  getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
         }
         setContentView(R.layout.activity_main1);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -95,23 +114,18 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
 
         mWindowManager = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
         wmRootView = new AbsoluteLayout(this);
-        pop=new PopupWindow(wmRootView, AbsoluteLayout.LayoutParams.MATCH_PARENT,AbsoluteLayout.LayoutParams.MATCH_PARENT,false);
         rootView = getWindow().getDecorView();
         linearLayout = (LinearLayout) findViewById(R.id.bookItemLinearLayout);
-
 
         SQLiteDatabase db = Connector.getDatabase();  //初始化数据库
         ReadActivity.sp = getSharedPreferences("config", MODE_PRIVATE);//在这里初始化preferences防止未打开过书就删除书报的错误
         bookShelf = (DragGridView) findViewById(R.id.bookShelf);
         ActivityManager activityManager=(ActivityManager)MainActivity.this.getSystemService(Context.ACTIVITY_SERVICE);
         int memoryClass = activityManager.getMemoryClass();// 返回的就是本机给每个app分配的运行内存
+        typeface = Typeface.createFromAsset(getApplicationContext().getAssets(),"font/QH.ttf");
 
         bookLists = new ArrayList<>();
         bookLists = DataSupport.findAll(BookList.class);
-        for (int i=0;i<bookLists.size();i++) {
-            String a = bookLists.get(i).getBookname();
-         //   Log.d("MainActivity","是否取出全部数据库数据"+a);
-        }
         adapter = new ShelfAdapter(MainActivity.this,bookLists);
         bookShelf.setAdapter(adapter);
         initNavigationView();
@@ -120,66 +134,88 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (bookLists.size() > position) {
-                    if (isShowDelete) {
-                        String bookpath = bookLists.get(position).getBookpath();
+                    itemPosition = position;
+                    String bookname = bookLists.get(itemPosition).getBookname();
+                    itemView = view;
+                    itemTextView = (TextView) view.findViewById(R.id.imageView1);
 
-                        DataSupport.deleteAll(BookList.class, "bookpath = ?", bookpath);
-                        DataSupport.deleteAll(BookMarks.class, "bookpath = ?", bookpath);
+                    // Log.d("position is", "" + position);
+                    //itemView.setDrawingCacheEnabled(true);
+                    //coverBitmap = Bitmap.createBitmap(itemView.getDrawingCache());
+                    //itemView.destroyDrawingCache();
 
-                        if (ReadActivity.sp.contains(bookpath + "begin")) {
-                            ReadActivity.editor.remove(bookpath + "begin");//删除该书在本地存储的值
-                            ReadActivity.editor.commit();
-                        }
+                    itemTextView.getLocationInWindow(location);
 
-                        bookLists = new ArrayList<BookList>();
-                        bookLists = DataSupport.findAll(BookList.class);
-                        final ShelfAdapter adapter = new ShelfAdapter(MainActivity.this, bookLists);
-                        bookShelf.setAdapter(adapter);
-                        adapter.notifyDataSetChanged();
-                    } else {
-                        //  openBookIn();
-                        //  if(mIsOpen) {
-                        setBookViewPosition(position);
-                        adapter.setItemToFirst(position);
-                        String bookpath = bookLists.get(position).getBookpath();
-                        String bookname = bookLists.get(position).getBookname();
-                        Intent intent = new Intent();
-                        intent.setClass(MainActivity.this, ReadActivity.class);
-                        intent.putExtra("openposition", position);
-                        intent.putExtra("bookpath", bookpath);
-                        intent.putExtra("bookname", bookname);
-                        startActivity(intent);
-                        //  }
+                    mWindowManager.addView(wmRootView, getDefaultWindowParams());
 
+                    cover = new TextView(getApplicationContext());
+                    cover.setBackgroundDrawable(getResources().getDrawable(R.drawable.cover_default_new));
+                    cover.setCompoundDrawablesWithIntrinsicBounds(null,null,null,getResources().getDrawable(R.drawable.cover_type_txt));
+                    cover.setText(bookname);
+                    cover.setTextColor(getResources().getColor(R.color.read_textColor));
+                    cover.setTypeface(typeface);
+                    int coverPadding = (int) CommonUtil.convertDpToPixel(getApplicationContext(), 10);
+                    cover.setPadding(coverPadding, coverPadding, coverPadding, coverPadding);
+                    //cover = new ImageView(getApplicationContext());
+                    // cover.setImageBitmap(coverBitmap);
+
+                    content = new ImageView(getApplicationContext());
+                    content.setBackgroundDrawable(getResources().getDrawable(R.drawable.open_book_bg));
+                    //  Bitmap bitmap = BookPageFactory.decodeSampledBitmapFromResource(getResources(),
+                    //         R.drawable.open_book_bg,itemTextView.getMeasuredWidth(),itemTextView.getMeasuredHeight());
+                    //  content.setImageBitmap(bitmap);
+
+                    AbsoluteLayout.LayoutParams params = new AbsoluteLayout.LayoutParams(
+                            itemTextView.getLayoutParams());
+                    params.x = location[0];
+                    params.y = location[1];
+
+                    wmRootView.addView(content, params);
+                    wmRootView.addView(cover, params);
+
+                    initAnimation();
+
+                    if (contentAnimation.getMReverse()) {
+                        contentAnimation.reverse();
                     }
+                    if (coverAnimation.getMReverse()) {
+                        coverAnimation.reverse();
+                    }
+                    cover.clearAnimation();
+                    cover.startAnimation(coverAnimation);
+                    content.clearAnimation();
+                    content.startAnimation(contentAnimation);
                 }
             }
         });
 
-        drawerLayout.setDrawerListener(new DrawerLayout.DrawerListener() {
-            @Override
-            public void onDrawerSlide(View drawerView, float slideOffset) {
-                Log.d("mainactivity", "drawerslide");
-            }
-
-            @Override
-            public void onDrawerOpened(View drawerView) {
-                Log.d("mainactivity", "drawerOpened");
-            }
-
-            @Override
-            public void onDrawerClosed(View drawerView) {
-                Log.d("mainactivity", "DrawerClosed");
-            }
-
-            @Override
-            public void onDrawerStateChanged(int newState) {
-                Log.d("mainactivity", "stateChanged");
-            }
-        });
 
     }
 
+   private void initAnimation() {
+        AccelerateInterpolator interpolator = new AccelerateInterpolator();
+
+        float scale1 = MainActivity.getWindowWidth() / (float) itemTextView.getMeasuredWidth();
+        float scale2 = MainActivity.getWindowHeight() / (float) itemTextView.getMeasuredHeight();
+        scaleTimes = scale1 > scale2 ? scale1 : scale2;  //计算缩放比例
+
+        contentAnimation = new ContentScaleAnimation( location[0], location[1],scaleTimes, false);
+        contentAnimation.setInterpolator(interpolator);  //设置插值器
+        contentAnimation.setDuration(ANIMATION_DURATION);
+        contentAnimation.setFillAfter(true);  //动画停留在最后一帧
+        contentAnimation.setAnimationListener(this);
+
+        coverAnimation = new Rotate3DAnimation(0, -180, location[0], location[1], scaleTimes, false);
+        coverAnimation.setInterpolator(interpolator);
+        coverAnimation.setDuration(ANIMATION_DURATION);
+        coverAnimation.setFillAfter(true);
+        coverAnimation.setAnimationListener(this);
+
+    }
+
+    /**
+     * 初始化drawerLoyout
+     */
     private void initNavigationView(){
         navigationView = (NavigationView) findViewById(R.id.navigationView);
         drawerLayout = (MyDrawerLayout) findViewById(R.id.drawer_layout);
@@ -193,9 +229,8 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
                 return true;
             }
         });
-
-
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -218,7 +253,6 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
         }
         if (id==android.R.id.home) {
             drawerLayout.openDrawer(GravityCompat.START);
-           Log.d("MainActivity","home");
         }
         return super.onOptionsItemSelected(item);
     }
@@ -226,26 +260,14 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
     @Override
     protected void onRestart(){
 
-        super.onRestart();
-         closeBookIn();
-        //   DataBaseConnection dbc = new DataBaseConnection(MainActivity.this);   //创建数据库
-        //   dbc.getWritableDatabase();//打开数据库，返回一个可对数据库进行读写操作的对象
-        isShowDelete = false;//防止在长按事件下进入FileActivity后再回到MainActivity监听仍然存在
-        bookLists = new ArrayList<>();
-
-        bookLists = DataSupport.findAll(BookList.class);
-
-        ShelfAdapter adapter = new ShelfAdapter(MainActivity.this,bookLists);
-        for (int i=0;i<bookLists.size();i++) {
-            String a = bookLists.get(i).getBookname();
-          //  Log.d("MainActivity","是否取出全部数据库数据"+a);
-
-        }
-        bookShelf.setAdapter(adapter);
-
-        adapter.notifyDataSetChanged();
         DragGridView.setIsShowDeleteButton(false);
-        Log.d("MainActivity", "onResatart");
+        bookLists = new ArrayList<>();
+        bookLists = DataSupport.findAll(BookList.class);
+        adapter = new ShelfAdapter(MainActivity.this,bookLists);
+        bookShelf.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
+        closeBookAnimation();
+        super.onRestart();
     }
 
     @Override
@@ -263,221 +285,50 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         // TODO Auto-generated method stub
-
-        if (isShowDelete && keyCode == KeyEvent.KEYCODE_BACK) {
-            isShowDelete=false;
-            /**   AlertDialog.Builder builder = new AlertDialog.Builder(this);
-             builder.setMessage("你确定退出吗？")
-             .setCancelable(false)
-             .setPositiveButton("确定",
-             new DialogInterface.OnClickListener() {
-             public void onClick(DialogInterface dialog,
-             int id) {
-             finish();
-             }
-             })
-             .setNegativeButton("返回",
-             new DialogInterface.OnClickListener() {
-             public void onClick(DialogInterface dialog,
-             int id) {
-             dialog.cancel();
-             }
-             });
-             AlertDialog alert = builder.create();
-             //  alert.show();   */
-            return false;
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (drawerLayout.isDrawerOpen(Gravity.LEFT)) {
+                drawerLayout.closeDrawers();
+            } else {
+                exitBy2Click();
+            }
+            return true;
         }
-
         return super.onKeyDown(keyCode, event);
     }
 
+    /**
+     * 在2秒内按下返回键两次才退出
+     */
+    private void exitBy2Click() {
+        // press twice to exit
+        Timer tExit;
+        if (!isExit) {
+            isExit = true; // ready to exit
+            if(DragGridView.getShowDeleteButton()) {
+                DragGridView.setIsShowDeleteButton(false);
+                //要保证是同一个adapter对象,否则在Restart后无法notifyDataSetChanged
+                adapter.notifyDataSetChanged();
+            }else {
+            Toast.makeText(
+                    this,
+                    this.getResources().getString(R.string.press_twice_to_exit),
+                    Toast.LENGTH_SHORT).show(); }
+            tExit = new Timer();
+            tExit.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    isExit = false; // cancel exit
+                }
+            }, 2000); // 2 seconds cancel exit task
 
-    void initAnimation() {
-        AccelerateInterpolator interpolator=new AccelerateInterpolator();
-
-       // TextView textView = new TextView(this);
-        cover = new TextView(this);
-       // textView.setBackgroundResource(R.drawable.cover_txt);
-        //// 一个控件在其父窗口中的坐标位置 x y
-        cover.getLocationInWindow(location);  //此处为imageview
-
-        float scale1 = MainActivity.getWindowWidth() / (float)cover.getWidth();
-        float scale2 = MainActivity.getWindowHeight() / (float)cover.getHeight();
-        scaleTimes = scale1 > scale2 ? scale1 : scale2;  //计算缩放比例
-
-        contentAnimation = new ContentScaleAnimation(location[0], location[1],scaleTimes, false);
-        contentAnimation.setInterpolator(interpolator);
-        contentAnimation.setDuration(ANIMATION_DURATION);
-        contentAnimation.setFillAfter(true);//view动画结束后停在最后的位置
-        contentAnimation.setAnimationListener(this);
-
-
-        coverAnimation = new Rotate3DAnimation(0, -180, location[0], location[1], scaleTimes, false);
-        coverAnimation.setInterpolator(interpolator);
-        coverAnimation.setDuration(ANIMATION_DURATION);
-        coverAnimation.setFillAfter(true);
-        coverAnimation.setAnimationListener(this);
-
-
-    }
-
-    public void openBookIn(){
-        if (!mIsOpen) {
-            openBook();
+        } else {
+            finish();
+            // call fragments and end streams and services
+            System.exit(0);
         }
     }
 
-    public static void closeBookIn(){
-        if(mIsOpen) {
-            closeBook();
-        }
-    }
 
-    public  void  openBook() {
-        if(isFirstload){
-            isFirstload=false;
-
-            initAnimation();
-        }
-
-
-        mWindowManager.addView(wmRootView, getDefaultWindowParams());
-
-        //wmRootView.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_dark));
-
-      //  cover = new ImageView(getContext());
-        // cover.setScaleType(getScaleType());
-        //  cover.setImageDrawable(getDrawable());
-        cover = new TextView(getApplicationContext());
-      //  cover = (TextView) findViewById(R.id.imageView1);
-        cover.setBackgroundResource(R.drawable.cover_txt);
-        content = new ImageView(this);
-
-        //  content.setScaleType(getScaleType());
-        //   content.setBackground(getResources().getDrawable(R.drawable.content));
-        content.setBackgroundDrawable(getResources().getDrawable(R.drawable.content));
-
-
-        AbsoluteLayout.LayoutParams params =new AbsoluteLayout.LayoutParams(wmRootView.getLayoutParams()) ;
-        params.x=location[0];
-        params.y=location[1];
-        wmRootView.addView(content, params);
-        wmRootView.addView(cover, params);
-
-        //        cover.setX(location[0]);
-        //        cover.setY(location[1]);
-        //        content.setX(location[0]);
-        //        content.setY(location[1]);
-
-
-
-
-        /**  wmRootView.setOnClickListener(new OnClickListener() {
-        @Override
-        public void onClick(View v) {
-        if(mIsOpen){
-        closeBook();
-        }
-        }
-        });  */
-
-        if (contentAnimation.getMReverse()) {
-            contentAnimation.reverse();
-        }
-
-        if (coverAnimation.getMReverse()) {
-            coverAnimation.reverse();
-        }
-
-        content.clearAnimation();
-        content.startAnimation(contentAnimation);
-        cover.clearAnimation();
-        cover.startAnimation(coverAnimation);
-    }
-
-    public static void closeBook() {
-
-
-
-        if (!contentAnimation.getMReverse()) {
-            contentAnimation.reverse();
-        }
-
-        if (!coverAnimation.getMReverse()) {
-            coverAnimation.reverse();
-        }
-
-        content.clearAnimation();
-        content.startAnimation(contentAnimation);
-        cover.clearAnimation();
-        cover.startAnimation(coverAnimation);
-    }
-
-    public static int getWindowWidth() {
-        return rootView.getMeasuredWidth();
-    }
-
-    public static int getWindowHeight() {
-        return rootView.getMeasuredHeight();
-
-    }
-
-    private WindowManager.LayoutParams getDefaultWindowParams() {
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                0, 0,
-                WindowManager.LayoutParams.TYPE_APPLICATION_PANEL,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                PixelFormat.RGBA_8888);
-
-        return params;
-    }
-
-    void initView() {
-
-        wmRootView = new AbsoluteLayout(this);
-        pop=new PopupWindow(wmRootView, AbsoluteLayout.LayoutParams.MATCH_PARENT,AbsoluteLayout.LayoutParams.MATCH_PARENT,false);
-    }
-
-    @Override
-    public void onAnimationStart(Animation animation) {
-
-    }
-
-    @Override
-    public void onAnimationEnd(Animation animation) {
-        if(!mIsOpen){
-            animationCount++;
-
-            if(animationCount>=2) {
-                mIsOpen = true;
-                   String bookpath = bookLists.get(getBookViewPosition()).getBookpath();
-                   String bookname = bookLists.get(getBookViewPosition()).getBookname();
-                   Intent intent = new Intent(MainActivity.this, ReadActivity.class);
-                   intent.putExtra("bookpath", bookpath);
-                   intent.putExtra("bookname", bookname);
-                   intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                   startActivity(intent);
-            }
-
-        }else{
-            animationCount--;
-
-            if(animationCount<=0) {
-                mIsOpen = false;
-
-                mWindowManager.removeView(wmRootView);
-
-            }
-        }
-
-    }
-
-    @Override
-    public void onAnimationRepeat(Animation animation) {
-
-    }
 
     public void setBookViewPosition(int position) {
         this.bookViewPosition = position;
@@ -488,4 +339,93 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
     }
 
 
+    public static int getWindowWidth() {
+        return rootView.getMeasuredWidth();
+    }
+
+    public static int getWindowHeight() {
+        return rootView.getMeasuredHeight();
+    }
+
+    private WindowManager.LayoutParams getDefaultWindowParams() {
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT,
+                0, 0,
+                WindowManager.LayoutParams.TYPE_APPLICATION_PANEL,//windown类型,有层级的大的层级会覆盖在小的层级
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                PixelFormat.RGBA_8888);
+
+        return params;
+    }
+
+    @Override
+    public void onAnimationStart(Animation animation) {
+
+    }
+
+    @Override
+    public void onAnimationEnd(Animation animation) {
+
+        //有两个动画监听会执行两次，所以要判断
+        if (!mIsOpen) {
+            animationCount++;
+            if (animationCount >= 2) {
+                mIsOpen = true;
+                setBookViewPosition(itemPosition);
+                adapter.setItemToFirst(itemPosition);
+                String bookpath = bookLists.get(itemPosition).getBookpath();
+                String bookname = bookLists.get(itemPosition).getBookname();
+                Intent intent = new Intent();
+                intent.setClass(MainActivity.this, ReadActivity.class);
+                intent.putExtra("bookpath", bookpath);
+                intent.putExtra("bookname", bookname);
+                startActivity(intent);
+
+            }
+
+        } else {
+            animationCount--;
+            if (animationCount <= 0) {
+                mIsOpen = false;
+                wmRootView.removeView(cover);
+                wmRootView.removeView(content);
+                mWindowManager.removeView(wmRootView);
+            }
+        }
+    }
+    @Override
+    public void onAnimationRepeat(Animation animation) {
+
+    }
+
+    public void closeBookAnimation() {
+
+        if (mIsOpen && wmRootView!=null) {
+            //因为书本打开后会移动到第一位置，所以要设置新的位置参数
+            contentAnimation.setmPivotXValue(bookShelf.getFirstLocation()[0]);
+            contentAnimation.setmPivotYValue(bookShelf.getFirstLocation()[1]);//273是开始第一个item的y值,如果改变布局位置会不一样
+            coverAnimation.setmPivotXValue(bookShelf.getFirstLocation()[0]);
+            coverAnimation.setmPivotYValue(bookShelf.getFirstLocation()[1]);
+
+            AbsoluteLayout.LayoutParams params = new AbsoluteLayout.LayoutParams(
+                    itemTextView.getLayoutParams());
+            params.x = bookShelf.getFirstLocation()[0];
+            params.y = bookShelf.getFirstLocation()[1];//firstLocation[1]在滑动的时候回改变,所以要在dispatchDraw的时候获取该位置值
+            wmRootView.updateViewLayout(cover,params);
+            wmRootView.updateViewLayout(content,params);
+            //动画逆向运行
+            if (!contentAnimation.getMReverse()) {
+                contentAnimation.reverse();
+            }
+            if (!coverAnimation.getMReverse()) {
+                coverAnimation.reverse();
+            }
+            //清除动画再开始动画
+            content.clearAnimation();
+            content.startAnimation(contentAnimation);
+            cover.clearAnimation();
+            cover.startAnimation(coverAnimation);
+        }
+    }
 }

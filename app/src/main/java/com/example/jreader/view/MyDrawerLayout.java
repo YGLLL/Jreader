@@ -76,10 +76,10 @@ public class MyDrawerLayout extends DrawerLayout {
                         } else {
                             return false;
                         }        */
-                        break;
+
 
                     case MotionEvent.ACTION_MOVE:
-                        Log.d("myDrawerlayout ad", "44444");
+
                         break;
 
                       default:

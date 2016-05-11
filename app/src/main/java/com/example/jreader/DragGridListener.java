@@ -31,4 +31,5 @@ public interface DragGridListener {
      */
      void setItemToFirst (int openPosition);
 
+     void nitifyDataRefresh();
 }

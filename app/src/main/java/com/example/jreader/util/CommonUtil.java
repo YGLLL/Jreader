@@ -2,7 +2,9 @@ package com.example.jreader.util;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Typeface;
 import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.Window;
 import android.view.WindowManager;
@@ -15,7 +17,13 @@ import java.lang.reflect.Method;
 public class CommonUtil {
 
 
-    //获取屏幕原始尺寸高度，包括虚拟功能键高度
+
+
+    /**
+     * 获取屏幕原始尺寸高度，包括虚拟功能键高度
+     * @param context
+     * @return
+     */
     public static int getDpi(Context context){
         int dpi = 0;
         WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
@@ -105,4 +113,48 @@ public class CommonUtil {
         return APIVersion;
     }
 
+    /**
+     *
+     * @param context
+     * @param px
+     * @return
+     */
+    public static float convertPixelsToDp(final Context context, final float px) {
+        return px / context.getResources().getDisplayMetrics().density;
+    }
+
+    /**
+     *
+     * @param context
+     * @param dp
+     * @return
+     */
+    public static float convertDpToPixel(final Context context, final float dp) {
+        return dp * context.getResources().getDisplayMetrics().density;
+    }
+
+    /**
+     * sp转px
+     *
+     * @param context
+     * @param spVal
+     * @return
+     */
+    public static int sp2px(Context context, float spVal)
+    {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,
+                spVal, context.getResources().getDisplayMetrics());
+    }
+
+    /**
+     * px转sp
+     *
+     * @param context
+     * @param pxVal
+     * @return
+     */
+    public static float px2sp(Context context, float pxVal)
+    {
+        return (pxVal / context.getResources().getDisplayMetrics().scaledDensity);
+    }
 }

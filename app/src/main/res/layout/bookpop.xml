@@ -111,7 +111,7 @@ android:layout_gravity是用来设置该view相对与父view 的位置．比如�
     <TextView
         style="@style/text_style"
         android:layout_marginTop="1dp"
-        android:id="@+id/text_speak"
+        android:id="@+id/readSet"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="1"

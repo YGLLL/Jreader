@@ -13,6 +13,7 @@ import android.graphics.Region;
 import android.graphics.drawable.GradientDrawable;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.widget.Scroller;
 /**
@@ -48,7 +49,7 @@ public class PageWidget extends View {
     float[] mMatrixArray = { 0, 0, 0, 0, 0, 0, 0, 0, 1.0f };
 
     boolean mIsRTandLB; // 是否属于右上左下
-    float mMaxLength = (float) Math.hypot(mScreenWidth, mScreenHeight);
+    private float mMaxLength ;
     int[] mBackShadowColors;// 背面颜色组
     int[] mFrontShadowColors;// 前面颜色组
     GradientDrawable mBackShadowDrawableLR; // 有阴影的GradientDrawable
@@ -72,7 +73,7 @@ public class PageWidget extends View {
         mPath1 = new Path();
         mScreenWidth = width;
         mScreenHeight = height;
-
+        mMaxLength = (float) Math.hypot(mScreenWidth, mScreenHeight);
         mPaint = new Paint();
         mPaint.setStyle(Paint.Style.FILL);
 
@@ -97,7 +98,7 @@ public class PageWidget extends View {
      * @param y
      */
     public void calcCornerXY(float x, float y) {
-      //  Log.i("hck", "PageWidget x:" + x + "      y" + y);
+        //  Log.i("hck", "PageWidget x:" + x + "      y" + y);
         if (x <= mScreenWidth / 2)
             mCornerX = 0;
         else
@@ -118,36 +119,25 @@ public class PageWidget extends View {
         if (event.getAction() == MotionEvent.ACTION_MOVE) {
             mTouch.x = event.getX();
             mTouch.y = event.getY();
-          //  if (DragToRight()!="popview"&&DragToRight()!=null) {
-                this.postInvalidate();
-           // }
+            this.postInvalidate();
         }
-        if (event.getAction() == MotionEvent.ACTION_MOVE
-                && event.getMetaState() == 1) {
-            mTouch.x = event.getX();
-            mTouch.y = event.getY();
-          //  if(DragToRight()!="popview") {
-                this.postInvalidate();
-                startAnimation(1200);
-         //   }
-        }
+
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             mTouch.x = event.getX();
             mTouch.y = event.getY();
             actiondownX = event.getX();
             actiondownY = event.getY();
-            Log.d("PageWidget","mTouch.x="+mTouch.x);
-            Log.d("PageWidget","mTouch.y="+mTouch.y);
         }
         if (event.getAction() == MotionEvent.ACTION_UP) {
-            // 直接画出动画而不使用时上面的条件判断
-
-
-
-         //   if(DragToRight()!="popview"&&DragToRight()!=null) {
-                startAnimation(1200);
-                this.postInvalidate();
-          //  }
+            startAnimation(1200);
+            this.postInvalidate();
+        }
+        if (event.getAction() == MotionEvent.ACTION_MOVE
+                && event.getMetaState() == 1) {
+            mTouch.x = event.getX();
+            mTouch.y = event.getY();
+            startAnimation(1200);
+            this.postInvalidate();
         }
         // return super.onTouchEvent(event);
         return true;
@@ -182,18 +172,18 @@ public class PageWidget extends View {
                 * (mCornerY - mMiddleY) / (mCornerX - mMiddleX);
         mBezierControl1.y = mCornerY;
         mBezierControl2.x = mCornerX;
-     //   mBezierControl2.y = mMiddleY - (mCornerX - mMiddleX)
-             //   * (mCornerX - mMiddleX) / (mCornerY - mMiddleY);
+        //   mBezierControl2.y = mMiddleY - (mCornerX - mMiddleX)
+        //   * (mCornerX - mMiddleX) / (mCornerY - mMiddleY);
 
         float f4 = mCornerY-mMiddleY;
         if (f4 == 0) {
             mBezierControl2.y = mMiddleY - (mCornerX - mMiddleX)
                     * (mCornerX - mMiddleX) / 0.1f;
-        //    Log.d("PageWidget",""+f4);
+            //    Log.d("PageWidget",""+f4);
         }else {
             mBezierControl2.y = mMiddleY - (mCornerX - mMiddleX)
                     * (mCornerX - mMiddleX) / (mCornerY - mMiddleY);
-        //    Log.d("PageWidget","没有进入if判断"+ mBezierControl2.y + "");
+            //    Log.d("PageWidget","没有进入if判断"+ mBezierControl2.y + "");
         }
 
         // Log.i("hmg", "mTouchX  " + mTouch.x + "  mTouchY  " + mTouch.y);
@@ -229,8 +219,8 @@ public class PageWidget extends View {
                 mBezierControl1.y = mCornerY;
 
                 mBezierControl2.x = mCornerX;
-            //    mBezierControl2.y = mMiddleY - (mCornerX - mMiddleX)
-                      //  * (mCornerX - mMiddleX) / (mCornerY - mMiddleY);
+                //    mBezierControl2.y = mMiddleY - (mCornerX - mMiddleX)
+                //  * (mCornerX - mMiddleX) / (mCornerY - mMiddleY);
 
                 float f5 = mCornerY-mMiddleY;
                 if (f5 == 0) {
@@ -238,8 +228,8 @@ public class PageWidget extends View {
                             * (mCornerX - mMiddleX) / 0.1f;
                 }else {
                     mBezierControl2.y = mMiddleY - (mCornerX - mMiddleX)
-                          * (mCornerX - mMiddleX) / (mCornerY - mMiddleY);
-                //    Log.d("PageWidget", mBezierControl2.y + "");
+                            * (mCornerX - mMiddleX) / (mCornerY - mMiddleY);
+                    //    Log.d("PageWidget", mBezierControl2.y + "");
                 }
 
 
@@ -319,7 +309,7 @@ public class PageWidget extends View {
         int leftx;
         int rightx;
         GradientDrawable mBackShadowDrawable;
-        if (mIsRTandLB) {
+        if (mIsRTandLB) {  //左下及右上
             leftx = (int) (mBezierStart1.x);
             rightx = (int) (mBezierStart1.x + mTouchToCornerDis / 4);
             mBackShadowDrawable = mBackShadowDrawableLR;
@@ -339,7 +329,7 @@ public class PageWidget extends View {
         canvas.drawBitmap(bitmap, 0, 0, null);
         canvas.rotate(mDegrees, mBezierStart1.x, mBezierStart1.y);
         mBackShadowDrawable.setBounds(leftx, (int) mBezierStart1.y, rightx,
-                (int) (mMaxLength + mBezierStart1.y));
+                (int) (mMaxLength + mBezierStart1.y));//左上及右下角的xy坐标值,构成一个矩形
         mBackShadowDrawable.draw(canvas);
         canvas.restore();
     }
@@ -643,19 +633,19 @@ public class PageWidget extends View {
         //     return false;
         //   return true;
 
-       if (actiondownX>mScreenWidth/3.0 && actiondownX < (mScreenWidth * 2.0 / 3.0) ) {
+        if (actiondownX>mScreenWidth/3.0 && actiondownX < (mScreenWidth * 2.0 / 3.0) ) {
             Log.d("PageWidget","是否进入此语句");
             return "popview";
 
         } else if (actiondownX < mScreenWidth / 3.0)  {
 
-                Log.d("PageWidget", "mScreenWidth / 3.0=" + mScreenWidth / 3.0);
-                return "right";
+            Log.d("PageWidget", "mScreenWidth / 3.0=" + mScreenWidth / 3.0);
+            return "right";
 
-            } else if (actiondownX > mScreenWidth*2.0 /3 ) {
+        } else if (actiondownX > mScreenWidth*2.0 /3 ) {
 
             return "left";
-            }
+        }
 
         return null;
     }

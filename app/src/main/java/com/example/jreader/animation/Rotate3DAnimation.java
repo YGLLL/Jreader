@@ -12,8 +12,8 @@ public class Rotate3DAnimation extends Animation {
     private Camera mCamera;
     private final float mFromDegrees;
     private final float mToDegrees;
-    private final float mPivotXValue;
-    private final float mPivotYValue;
+    private float mPivotXValue;// 控件左上角X
+    private float mPivotYValue;
     //private final float mDepthZ;   //不需要用到此参数
     private final float scaleTimes;
     private boolean mReverse;
@@ -67,14 +67,14 @@ public class Rotate3DAnimation extends Animation {
         camera.getMatrix(matrix);
         camera.restore();
 
-        //        matrix.preTranslate(-mPivotXValue, 0);      //在进行rotateY之前需要移动物体，让物体左边与Y轴对齐
-        //        matrix.postTranslate(mPivotXValue, 0);      //还原物体位置
+              //  matrix.preTranslate(-mPivotXValue, 0);      //在进行rotateY之前需要移动物体，让物体左边与Y轴对齐
+              //  matrix.postTranslate(mPivotXValue, 0);      //还原物体位置
 
         if (mReverse) {
-            matrix.postScale(1 + (scaleTimes - 1) * (1.0f - interpolatedTime), 1 + (scaleTimes - 1) * (1.0f - interpolatedTime),mPivotX-mPivotXValue,mPivotY-mPivotYValue);
+            matrix.postScale(1 + (scaleTimes - 1) * (1.0f - interpolatedTime), 1 + (scaleTimes - 1) * (1.0f - interpolatedTime), mPivotX - mPivotXValue , mPivotY - mPivotYValue);
         } else {
-            //matrix.postScale(1 + (scaleTimes - 1) * interpolatedTime, 1 + (scaleTimes - 1) * interpolatedTime, mPivotX, mPivotY);
-            matrix.postScale(1 + (scaleTimes - 1) * interpolatedTime, 1 + (scaleTimes - 1) * interpolatedTime,mPivotX-mPivotXValue,mPivotY-mPivotYValue);
+           // matrix.postScale(1 + (scaleTimes - 1) * interpolatedTime, 1 + (scaleTimes - 1) * interpolatedTime, mPivotX, mPivotY);
+            matrix.postScale(1 + (scaleTimes - 1) * interpolatedTime, 1 + (scaleTimes - 1) * interpolatedTime, mPivotX - mPivotXValue , mPivotY - mPivotYValue );
         }
     }
 
@@ -92,5 +92,13 @@ public class Rotate3DAnimation extends Animation {
 
     public boolean getMReverse() {
         return mReverse;
+    }
+
+    public void setmPivotXValue (float mPivotXValue1) {
+        this.mPivotXValue = mPivotXValue1;
+    }
+
+    public void setmPivotYValue (float mPivotYValue1) {
+        this.mPivotYValue = mPivotYValue1;
     }
 }

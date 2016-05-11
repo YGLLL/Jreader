@@ -1,6 +1,7 @@
 package com.example.jreader.adapter;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 import com.example.jreader.R;
 import com.example.jreader.database.BookMarks;
 import com.example.jreader.util.BookPageFactory;
+import com.example.jreader.util.CommonUtil;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -20,14 +22,12 @@ import java.util.List;
  */
 public class MarkAdapter extends BaseAdapter {
     private Context mContext;
-    // private ArrayList<HashMap<String, String>> aList = null;
     private List<BookMarks> list ;
-    private ListView markList;
-  //  private MarkHelper markhelper;
-     public MarkAdapter(Context c, List<BookMarks> list) {
-         mContext = c;
+    private Typeface typeface;
+    public MarkAdapter(Context context, List<BookMarks> list) {
+         mContext = context;
          this.list = list;
-
+         typeface = Typeface.createFromAsset(mContext.getAssets(),"font/QH.ttf");
     }
 
     @Override
@@ -47,16 +47,7 @@ public class MarkAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         LayoutInflater inflater = LayoutInflater.from(mContext);
-     //   View layout = inflater.inflate(R.layout.item_mark, null);
-      //  TextView markText1 = (TextView) layout.findViewById(R.id.markText1);
-     //   TextView markText2 = (TextView) layout.findViewById(R.id.markText2);
-     //   markText1.setText(list.get(position).getText());
-        // long begin = list.get(position).getBegin();
-     //   int page = list.get(position).getPage();
-      //  long count = list.get(position).getCount();
-    //    markText2.setText("[" + page + "/" + count + "] "
-       //         + list.get(position).getTime().substring(0, 16));
-     //   ImageView markImage2 = (ImageView) layout.findViewById(R.id.markImage2);
+
         final ViewHolder viewHolder;
         if (convertView == null) {
             viewHolder = new ViewHolder();
@@ -64,6 +55,9 @@ public class MarkAdapter extends BaseAdapter {
             viewHolder.text_mark = (TextView) convertView.findViewById(R.id.text_mark);
             viewHolder.progress1 = (TextView) convertView.findViewById(R.id.progress1);
             viewHolder.mark_time = (TextView) convertView.findViewById(R.id.mark_time);
+            viewHolder.text_mark.setTypeface(typeface);
+            viewHolder.progress1.setTypeface(typeface);
+            viewHolder.mark_time.setTypeface(typeface);
             convertView.setTag(viewHolder);
         }else {
             viewHolder = (ViewHolder) convertView.getTag();

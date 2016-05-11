@@ -35,8 +35,6 @@ public  class  FileAdapter extends BaseAdapter {
     protected Map<String, Integer> map;
 
     private int selectedPosition = -1;
-    int a = 0;
-   // private boolean isselect= false;
 
     public static int checkNum = 0; // 记录选中的条目数量
 
@@ -60,8 +58,6 @@ public  class  FileAdapter extends BaseAdapter {
         this.files = files;
         this.isSelected = isSelected;
     }
-    // 初始化isSelected的数据
-
 
     @Override
     public int getCount() {
@@ -113,22 +109,17 @@ public  class  FileAdapter extends BaseAdapter {
             viewHolder.linearLayout.setBackgroundColor(Color.TRANSPARENT);
         }
 
-
-
         viewHolder.textView.setText(files.get(position).getName());//设置文件名
-
+        //CheckBox状态变化监听
         viewHolder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 FileAcitvity.getIsSelected().put(position, viewHolder.checkBox.isChecked());
                 FileAcitvity.checkNum1 = CheckNum(FileAcitvity.getIsSelected());
 
+                String p =FileAcitvity.paths.get(position-Fileutil.folderNum);//减去文件夹的数量
 
-                String p =FileAcitvity.paths.get(position-Fileutil.folderNum);
-
-                    //把num 与position 对应起来
-
-
+                //把num 与position 对应起来
 
                 if (viewHolder.checkBox.isChecked() == true) {
 
@@ -203,21 +194,16 @@ public  class  FileAdapter extends BaseAdapter {
         List<Boolean> isCheck = new ArrayList<>();
         //遍历Key Value
         for (Map.Entry<Integer, Boolean> entry : map.entrySet()) {
-
          //   System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
             isCheck.add(entry.getValue());
-
         }
            //取出所有为true的数量
         for (int j =0 ; j <isCheck.size();j++) {
-
             if (isCheck.get(j)) {
                 i++;
             }
         }
          return i;
     }
-
-
 
 }

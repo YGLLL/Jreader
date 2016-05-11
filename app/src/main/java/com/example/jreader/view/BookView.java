@@ -3,6 +3,7 @@ package com.example.jreader.view;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
@@ -25,7 +26,7 @@ public class BookView extends TextView implements Animation.AnimationListener {
     private AbsoluteLayout wmRootView;
     private PopupWindow pop;
 
-    private static ImageView cover;
+    private static TextView cover;
     private static ImageView content;
 
     private float scaleTimes;
@@ -55,13 +56,14 @@ public class BookView extends TextView implements Animation.AnimationListener {
         initView();
 
        // openBookIn();
-       initListener();
+        initListener();
     }
 
     void initView() {
 
-        wmRootView = new AbsoluteLayout(getContext());
         pop=new PopupWindow(wmRootView, AbsoluteLayout.LayoutParams.MATCH_PARENT,AbsoluteLayout.LayoutParams.MATCH_PARENT,false);
+        wmRootView = new AbsoluteLayout(getContext());
+       // mWindowManager.addView(wmRootView, getDefaultWindowParams());
     }
 
     void initListener() {
@@ -97,39 +99,34 @@ public class BookView extends TextView implements Animation.AnimationListener {
         coverAnimation.setFillAfter(true);
         coverAnimation.setAnimationListener(this);
 
-
     }
 
-    public void openBookIn(){
-        if (!mIsOpen) {
-            openBook();
-        }
-    }
     public  void  openBook() {
-        if(isFirstload){
-            isFirstload=false;
 
-            initAnimation();
-        }
+
+        initAnimation();
+
 
 
         mWindowManager.addView(wmRootView, getDefaultWindowParams());
 
         //wmRootView.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_dark));
 
-        cover = new ImageView(getContext());
+        cover = new TextView(getContext());
        // cover.setScaleType(getScaleType());
-      //  cover.setImageDrawable(getDrawable());
+        cover.setBackgroundDrawable(getResources().getDrawable(R.drawable.cover_txt));
 
         content = new ImageView(getContext());
-      //  content.setScaleType(getScaleType());
+        //  content.setScaleType(getScaleType());
         //   content.setBackground(getResources().getDrawable(R.drawable.content));
-        content.setBackgroundDrawable(getResources().getDrawable(R.drawable.content_default));
+        content.setBackgroundDrawable(getResources().getDrawable(R.drawable.content));
 
 
         AbsoluteLayout.LayoutParams params =new AbsoluteLayout.LayoutParams(getLayoutParams()) ;
         params.x=location[0];
         params.y=location[1];
+        Log.d("location 0 =",""+params.x);
+        Log.d("location 1 =",""+params.y);
         wmRootView.addView(content, params);
         wmRootView.addView(cover, params);
 
@@ -141,14 +138,14 @@ public class BookView extends TextView implements Animation.AnimationListener {
 
 
         //一个不合理的方案，把关闭书本动画放到这
-        /**  wmRootView.setOnClickListener(new OnClickListener() {
+          wmRootView.setOnClickListener(new OnClickListener() {
         @Override
         public void onClick(View v) {
         if(mIsOpen){
         closeBook();
         }
         }
-        });  */
+        });
 
        if (contentAnimation.getMReverse()) {
             contentAnimation.reverse();
@@ -164,11 +161,7 @@ public class BookView extends TextView implements Animation.AnimationListener {
         cover.startAnimation(coverAnimation);
     }
 
-    public static void closeBookIn(){
-        if(mIsOpen) {
-            closeBook();
-        }
-    }
+
 
     public static void closeBook() {
 
@@ -221,6 +214,7 @@ public class BookView extends TextView implements Animation.AnimationListener {
              //   Intent intent = new Intent(getContext(), ReadActivity.class);
              //   intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
              //   getContext().startActivity(intent);
+
             }
 
         }else{
@@ -229,6 +223,8 @@ public class BookView extends TextView implements Animation.AnimationListener {
             if(animationCount<=0) {
                 mIsOpen = false;
 
+                wmRootView.removeView(content);
+                wmRootView.removeView(cover);
                 mWindowManager.removeView(wmRootView);
 
             }

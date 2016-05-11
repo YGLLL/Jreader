@@ -90,6 +90,11 @@ public class BookMarkFragment extends Fragment implements View.OnClickListener,A
         return true;
     }
 
+    /**
+     * 用于从Activity传递数据到Fragment
+     * @param argument
+     * @return
+     */
     public static BookMarkFragment newInstance(String argument)
     {
         Bundle bundle = new Bundle();
@@ -98,24 +103,10 @@ public class BookMarkFragment extends Fragment implements View.OnClickListener,A
         bookMarkFragment.setArguments(bundle);
         return bookMarkFragment;
     }
-    /**  markListview = (ListView) findViewById(R.id.marklistview);
-     button_back = (ImageButton) findViewById(R.id.back);
-     title = (TextView) findViewById(R.id.bookname);
-     Intent intent = getIntent();
-     bookpath_intent = intent.getStringExtra("bookpath");
-     bookMarksList = new ArrayList<>();
-     bookMarksList = DataSupport.where("bookpath = ?", bookpath_intent).find(BookMarks.class);
-     Log.d("MarkActivity", "数据库数据null");
-     for (int i = 0; i < bookMarksList.size(); i++) {
-     String a = bookMarksList.get(i).getText();
-     Log.d("MarkActivity", "是否取出全部数据库数据" + a);
 
-     }
-     MarkAdapter markAdapter = new MarkAdapter(MarkActivity.this, bookMarksList);
-     markListview.setAdapter(markAdapter);
-     markListview.setOnItemClickListener(this);
-     markListview.setOnItemLongClickListener(this);  */
-
+    /**
+     * 初始化浮动菜单
+     */
     private void initDeleteMarkPop() {
         delateMarkPopView = getActivity().getLayoutInflater().inflate(R.layout.delete_mark_pop,null);
         delateMarkPopView.measure(View.MeasureSpec.UNSPECIFIED,View.MeasureSpec.UNSPECIFIED);
@@ -126,43 +117,49 @@ public class BookMarkFragment extends Fragment implements View.OnClickListener,A
        // deleteMarkPop.setOutsideTouchable(true);
     }
 
+    /**
+     * 显示删除浮动菜单
+     * @param view
+     * @param position
+     */
     private void showDeleteMarkPop(View view,int position) {
 
             TextView deleteMark_TV = (TextView) delateMarkPopView.findViewById(R.id.delete_mark_tv);
             TextView deleteAllMark_TV = (TextView) delateMarkPopView.findViewById(R.id.delte_allmark_tv);
             deleteMark_TV.setOnClickListener(this);
             deleteAllMark_TV.setOnClickListener(this);
-            int popHeight = deleteMarkPop.getContentView().getMeasuredHeight();
+            int popHeight = deleteMarkPop.getContentView().getMeasuredHeight();//注意获取高度的方法
             deleteMarkPop.showAsDropDown(view, 0, -view.getHeight() - popHeight);
-
     }
 
     @Override
     public void onClick(View v) {
 
         switch (v.getId()) {
-
+            //删除单个书签
             case R.id.delete_mark_tv:
                int id = bookMarksList.get(itemPosition).getId();
                DataSupport.delete(BookMarks.class,id);
-               notifyDataChanged();
-               Log.d("bookmarkfragment","删除书签");
+               notifyDataRefresh();
+               // Log.d("bookmarkfragment","删除书签");
                deleteMarkPop.dismiss();
                break;
-
+            //删除全部书签
             case R.id.delte_allmark_tv:
-                Log.d("bookmarkfragment","清空书签");
+                // Log.d("bookmarkfragment","清空书签");
                 String bookpath = bookMarksList.get(itemPosition).getBookpath();
                 DataSupport.deleteAll(BookMarks.class,"bookpath = ?",bookpath);
-                notifyDataChanged();
+                notifyDataRefresh();
                 deleteMarkPop.dismiss();
                 break;
-
         }
 
     }
 
-    public void notifyDataChanged () {
+    /**
+     * 删除后重新从数据库获取数据
+     */
+    private void notifyDataRefresh () {
         bookMarksList = new ArrayList<>();
         bookMarksList = DataSupport.where("bookpath = ?", mArgument).find(BookMarks.class);
         MarkAdapter markAdapter = new MarkAdapter(getActivity(),bookMarksList);

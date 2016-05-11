@@ -35,32 +35,20 @@ import java.util.Map;
 import java.util.Stack;
 
 /**
- * Created by Administrator on 2015/12/19.
+ * Created by LXQ on 2015/12/19.
  */
 public class FileAcitvity extends AppCompatActivity {
-    protected ListView lv;
     protected ArrayList<Map<String, Object>> aList;
     protected int a;
-    protected TextView addtips;
-
     private File root;
     private ListView listView;
-
     private ImageButton returnBtn;
-    private ImageButton fileImage;
     private TextView titleView;
-    private int check = 0;// 创建文件的标志
-
     private static FileAdapter adapter;
     private static HashMap<Integer,Boolean> isSelected;
     public static int checkNum1 = 0; // 记录选中的条目数量
-
     private Map<String, String> map = null;// 这个用来保存复制和粘贴的路径
-
-    private List<File> list;
-
-    private View view;
-    private LinearLayout layout;
+    private List<File> listFile;
     private static Button chooseAllButton, deleteButton, addfileButton;
     protected List<AsyncTask<Void, Void, Boolean>> myAsyncTasks = new ArrayList<AsyncTask<Void, Void, Boolean>>();
     // path的堆栈
@@ -75,35 +63,25 @@ public class FileAcitvity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar2);
         setSupportActionBar(toolbar);                            //toolbar当actionbar使用
         toolbar.setNavigationIcon(R.drawable.return_button);//设置导航图标
-
-        String storageState = Environment.getExternalStorageState();
-
-    /** if (storageState.equals(Environment.MEDIA_MOUNTED)) {
-            root = new File(Environment.getExternalStorageDirectory()
-                    .getAbsolutePath());
-        } else {
-            finish();
-        }   */
+        if(getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("导入图书");
+        }
         root = Environment.getExternalStorageDirectory();
         initView();
+        handledButtonListener();
     }
 
-
+    /**
+     * 初始化view
+     */
     private void initView() {
 
-      //  layout = (LinearLayout) findViewById(R.id.local_File_lin);
-
         listView = (ListView) findViewById(R.id.local_File_drawer);
-
-        adapter = new FileAdapter(this, list, isSelected);
-
+        adapter = new FileAdapter(this, listFile, isSelected);
         listView.setAdapter(adapter);
-
         map = new HashMap<String, String>();
-
         listView.setOnItemClickListener(new DrawerItemClickListener());
-     //   registerForContextMenu(listView);// 注册一个上下文菜单
-
+        listView.setOnItemLongClickListener(new DrawerItemClickListener());//
         returnBtn = (ImageButton) findViewById(R.id.local_File_return_btn);
         titleView = (TextView) findViewById(R.id.local_File_title);
         chooseAllButton = (Button) findViewById(R.id.choose_all);
@@ -113,10 +91,12 @@ public class FileAcitvity extends AppCompatActivity {
         searchData(root.getAbsolutePath());
         addPath(root.getAbsolutePath());
 
+    }
 
+    private void handledButtonListener () {
         /**
-        * 返回上一文件层
-        * */
+         * 返回上一文件层
+         * */
         returnBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -131,34 +111,33 @@ public class FileAcitvity extends AppCompatActivity {
             }
         });
         /**
-        * 全选
+         * 全选
          * */
         chooseAllButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                int num = Fileutil.getFileNum(list);
-                int j = list.size()-num;  //获得选择时的position
-                for ( int k = j ; k < list.size() ; k++) {
+                int num = Fileutil.getFileNum(listFile);
+                int j = listFile.size()-num;  //获得选择时的position
+                for ( int k = j ; k < listFile.size() ; k++) {
                     FileAcitvity.getIsSelected().put(k, true);
 
                     if(!mapin.containsKey(paths.get(k-j))) {
                         mapin.put(paths.get(k-j),k);
                     }
                 }
-
                 checkNum1 = FileAdapter.CheckNum(FileAcitvity.getIsSelected());
                 // 刷新listview和TextView的显示
                 dataChanged();
             }
         });
         /**
-        * 取消选择
-        * */
+         * 取消选择
+         * */
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                for (int i = 0 ;i< list.size(); i++) {
+                for (int i = 0; i < listFile.size(); i++) {
                     FileAcitvity.getIsSelected().put(i, false);
                     checkNum1 = FileAdapter.CheckNum(FileAcitvity.getIsSelected());
 
@@ -169,33 +148,27 @@ public class FileAcitvity extends AppCompatActivity {
             }
         });
         /**
-        * 把已经选择的书加入书架
-        * */
+         * 把已经选择的书加入书架
+         * */
         addfileButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Map<String,Integer> map =mapin;
+                Map<String, Integer> map = mapin;
 
                 int addNum = FileAdapter.CheckNum(FileAcitvity.getIsSelected());
-                if (addNum>0) {
-
-                   for(String key : map.keySet()) {
-                       BookList bookList = new BookList();
-                       File file = new File(key);
-                       String bookName = file.getName();
-                       bookList.setBookname(bookName);
-                       bookList.setBookpath(key);
-                       saveBooktoSqlite3(bookName,key,bookList);//开启线程存储书到数据库
-
-                   }
-
+                if (addNum > 0) {
+                    for (String key : map.keySet()) {
+                        BookList bookList = new BookList();
+                        File file = new File(key);
+                        String bookName = Fileutil.getFileNameNoEx(file.getName());
+                        bookList.setBookname(bookName);
+                        bookList.setBookpath(key);
+                        saveBooktoSqlite3(bookName, key, bookList);//开启线程存储书到数据库
+                    }
                 }
-
             }
         });
-
     }
-
     /**
      * 查询调用方法
      */
@@ -207,7 +180,6 @@ public class FileAcitvity extends AppCompatActivity {
     /**
      * 异步查询view的数据
      */
-
     public void putAsyncTask(AsyncTask<Void, Void, Boolean> asyncTask) {
         myAsyncTasks.add(asyncTask.execute());
     }
@@ -218,13 +190,11 @@ public class FileAcitvity extends AppCompatActivity {
 
             @Override
             protected Boolean doInBackground(Void... params) {
-
                 try {
-                    list = Fileutil.getFileListByPath(path);
+                    listFile = Fileutil.getFileListByPath(path);
                 } catch (Exception e) {
                     return false;
                 }
-
                 return true;
             }
 
@@ -233,18 +203,14 @@ public class FileAcitvity extends AppCompatActivity {
                 super.onPostExecute(result);
 
                 if (result) {
-
-                    adapter.setFiles(list);  //list值传到adapter
-
+                    adapter.setFiles(listFile);  //list值传到adapter
                     isSelected = new HashMap<Integer, Boolean>();//异步线程后checkBox初始赋值
-                    for (int i = 0; i < list.size(); i++) {
+                    for (int i = 0; i < listFile.size(); i++) {
                         getIsSelected().put(i, false);
                     }
-
                     adapter.setSelectedPosition(-1);
                     addfileButton.setText("加入书架(" + 0 + ")项");//异步线程后重新执行初始化
                     adapter.notifyDataSetChanged();
-
                 } else {
                     Toast.makeText(FileAcitvity.this, "查询失败", Toast.LENGTH_LONG)
                             .show();
@@ -268,10 +234,8 @@ public class FileAcitvity extends AppCompatActivity {
             protected Boolean doInBackground(Void... params) {
 
                 try {
-                    //   List<BookList> bookLists1 = DataSupport.findAll(BookList.class);
                     String sql = "SELECT id FROM booklist WHERE bookname =? and bookpath =?";
-                    Cursor cursor = DataSupport.findBySQL(sql,bookName,key);
-
+                    Cursor cursor = DataSupport.findBySQL(sql, bookName, key);
                     if (!cursor.moveToFirst()) { //This method will return false if the cursor is empty
                         bookList.save();
                     } else {
@@ -279,24 +243,21 @@ public class FileAcitvity extends AppCompatActivity {
                     }
 
                 } catch (Exception e) {
-                  //  return false;
+                    //  return false;
                 }
-
                 return true;
             }
 
             @Override
-            protected void onPostExecute (Boolean result) {
+            protected void onPostExecute(Boolean result) {
                 if (result) {
-
-                }else {
-                    Toast.makeText(getApplicationContext(), bookName+"已在书架了", Toast.LENGTH_SHORT).show();
+                } else {
+                    //  Toast.makeText(getApplicationContext(), bookName+"已在书架了", Toast.LENGTH_SHORT).show();
                 }
             }
 
         });
     }
-
 
     /**
      * 添加路径到堆栈
@@ -308,7 +269,6 @@ public class FileAcitvity extends AppCompatActivity {
         if (pathStack == null) {
             pathStack = new Stack<String>();
         }
-
         pathStack.add(path);
     }
 
@@ -341,16 +301,19 @@ public class FileAcitvity extends AppCompatActivity {
 
         }
 
-
         @Override
         public boolean  onItemLongClick (AdapterView<?> parent, View view, int position,
                                          long id) {
 
-            return false;
+            return true;
         }
 
     }
 
+    /**
+     * item点击时分文件夹和文件，是文件夹则继续进入，是文件则打开
+     * @param position
+     */
     private void selectItem(int position) {
         BookList bookList = new BookList();
         String filePath = adapter.getFiles().get(position).getAbsolutePath();
@@ -404,12 +367,12 @@ public class FileAcitvity extends AppCompatActivity {
         }
         if (id==android.R.id.home) {
             NavUtils.navigateUpFromSameTask(this);//Navigate Up to Parent Activity
-            Log.d("FileActivity", "home");
+           // Log.d("FileActivity", "home");
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
-
+    //checkBox的选择状态hashMap
     public static HashMap<Integer,Boolean> getIsSelected() {
         return isSelected;
     }
@@ -423,30 +386,17 @@ public class FileAcitvity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
         // TextView显示最新的选中数目
         addfileButton.setText("加入书架("+ checkNum1 + ")项");
+
     }
 
 
     @Override
     protected void onRestart () {
-
-        Fileutil.folderNum = 0;
-        mapin.clear();
-        FileAcitvity.paths.clear();
+      //  Fileutil.folderNum = 0;
+      //  mapin.clear();
+      //  FileAcitvity.paths.clear();
         super.onRestart();
         //Log.d("FileAcitvity", "onRestart");
-
     }
-
-    @Override
-    protected void onPause () {
-
-        super.onPause();
-        Fileutil.folderNum = 0;
-        mapin.clear();
-        FileAcitvity.paths.clear();
-       // Log.d("FileAcitvity", "onPause");
-
-    }
-
 
 }

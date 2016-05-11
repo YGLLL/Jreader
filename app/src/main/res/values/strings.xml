@@ -12,6 +12,7 @@
     <string name="bookpop_send">跳转</string>
     <string name="speak"> 语音</string>
     <string name="readseting">设置</string>
+    <string name="press_twice_to_exit">连续点击两次退出</string>
     <string formatted="false" name="tts_toast_format">缓冲进度为%d%%，播放进度为%d%%</string>
     <string-array name="voicer_cloud_entries">
         <item>小燕—女青、中英、普通话</item>

@@ -15,6 +15,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.os.AsyncTask;
@@ -73,9 +74,8 @@ import java.util.zip.DataFormatException;
  * Created by Administrator on 2016/1/3.
  */
 public class ReadActivity extends Activity implements OnClickListener,
-        SeekBar.OnSeekBarChangeListener,itemMoveToFirst {
+        SeekBar.OnSeekBarChangeListener {
     private LinearLayout layout;
-    private AlertDialog dialog;
     private static final String TAG = "Read2";
     private static int begin = 0;// 记录的书籍开始位置
     private static int begin1;
@@ -83,27 +83,25 @@ public class ReadActivity extends Activity implements OnClickListener,
     public static Canvas mCurPageCanvas, mNextPageCanvas;
     private static String word = "";// 记录当前页面的文字
     private int a = 0, b = 0;// 记录toolpop的位置
-    private TextView bookBtn1, bookBtn2, bookBtn3, bookBtn4;
+    private TextView fontSize, readLight, bookMark, readJump,readSet;
     private static String bookPath,bookName;// 记录读入书的路径及书名
     private String ccc = null;// 记录是否为快捷方式调用
     protected long count = 1;
     public static SharedPreferences.Editor editor;
     private ImageButton listener_book,imageBtn_light,pop_return ;
-    private TextView btn_mark_add,btn_mark_my;
+    private TextView btn_mark_add,btn_mark_my,lightPlus,linghtDecrease;
     private TextView jumpOk, jumpCancel,fontBig,fontSmall;
     private Boolean isNight; // 亮度模式,白天和晚上
     protected int jumpPage;// 记录跳转进度条
     private int light; // 亮度值
     private WindowManager.LayoutParams lp;
     private TextView markEdit4;
- //   private MarkHelper markhelper;
-    private static Bitmap mCurPageBitmap, mNextPageBitmap,mCurPageBitmap_save,mNextPageBitmap_save;
-  //  private MarkDialog mDialog = null;
+    private static Bitmap mCurPageBitmap, mNextPageBitmap;
+
     private Context mContext = null;
     private PageWidget mPageWidget;
     private PopupWindow mPopupWindow, mToolpop, mToolpop1, mToolpop2,
             mToolpop3, mToolpop4, playpop,voicesetpop;
-    protected int PAGE = 1;
     private  BookPageFactory pagefactory;
     private View popupwindwow, toolpop, toolpop1, toolpop2, toolpop3, toolpop4,
             playView,voiceSetView;  //加载popupwindow布局
@@ -114,12 +112,13 @@ public class ReadActivity extends Activity implements OnClickListener,
     private Boolean show = false;// popwindow是否显示
     private Boolean voiceSetShow = false;//语音设置显示
     private Boolean voiceListining = false;//语音正在合成
-    private int size = 30; // 字体大小
+    private int fontsize = 30; // 字体大小
     public static SharedPreferences sp;
-    int defaultSize = 0;
+    private int defaultFontSize = 0;
+    private int minFontSize = 0;
+    private int maxFontSize = 0;
     public static String words;
     private boolean isStart;
-  //  private InstallManager mManager = null;
     private Button button3;
     private  int scale;
     // 语音合成对象
@@ -137,33 +136,7 @@ public class ReadActivity extends Activity implements OnClickListener,
     private String[] mCloudVoicersValue ;
     private int selectedNum = 0;//选择导入书架的书本数量
     private AudioManager audio;
-    private List<String> bookCatalogueList;
-    private List<Integer> bookCatalogueStartPosList;
-    protected List<AsyncTask<Void, Void, Boolean>> myAsyncTasks = new ArrayList<AsyncTask<Void, Void, Boolean>>();
-    private int openPosition;
-
-    // 实例化Handler
-    public Handler mHandler = new Handler() {
-        // 接收子线程发来的消息，同时更新UI
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case 0:
-                    begin = msg.arg1;
-                    pagefactory.setM_mbBufBegin(begin);
-                    pagefactory.setM_mbBufEnd(begin);
-                    postInvalidateUI();
-                    break;
-                case 1:
-                    pagefactory.setM_mbBufBegin(begin);
-                    pagefactory.setM_mbBufEnd(begin);
-                    postInvalidateUI();
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
-
+    private Typeface typeface;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -172,9 +145,9 @@ public class ReadActivity extends Activity implements OnClickListener,
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//保存屏幕常亮
         hideSystemUI();//隐藏
         mContext = getBaseContext();
-
+        typeface = Typeface.createFromAsset(getApplicationContext().getAssets(),"font/QH.ttf");
         scale = (int)mContext.getResources().getDisplayMetrics().density;
-        //Log.d("ReadActivity","scaleis"+scale);
+
         //初始化语音
         SpeechUtility.createUtility(ReadActivity.this, SpeechConstant.APPID +"=5695a8b4");//创建语音配置对象
         mTts = SpeechSynthesizer.createSynthesizer(ReadActivity.this,mTtsInitListener);//初始化合成对象
@@ -189,11 +162,12 @@ public class ReadActivity extends Activity implements OnClickListener,
         display.getSize(displaysize);
         screenWidth = displaysize.x;
         screenHeight = displaysize.y;
-       // screenWidth = display.getWidth();
-       // screenHeight = display.getHeight();
-
-        defaultSize = 40 ;  //text size
         readHeight = screenHeight - screenWidth / 320;
+
+        defaultFontSize = (int) mContext.getResources().getDimension(R.dimen.reading_default_text_size) ;  //text size
+        minFontSize = (int) mContext.getResources().getDimension(R.dimen.reading_min_text_size);
+        maxFontSize = (int) mContext.getResources().getDimension(R.dimen.reading_max_text_size);
+
 
         mCurPageBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.RGB_565);      //android:LargeHeap=true  use in  manifest application
         mNextPageBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.RGB_565);
@@ -201,21 +175,8 @@ public class ReadActivity extends Activity implements OnClickListener,
         mNextPageCanvas = new Canvas(mNextPageBitmap);
 
         mPageWidget = new PageWidget(this, screenWidth, readHeight);// 页面
-
         RelativeLayout rlayout = (RelativeLayout) findViewById(R.id.readlayout);
         rlayout.addView(mPageWidget);
-
-        BookCatalogue bookCatalogue = new BookCatalogue();
-        bookCatalogue.setBookCatalogue("第一章 死亡");
-
-        //获得系统menu显示,在5.1系统失效
-        /**try {
-            getWindow().addFlags(WindowManager.LayoutParams.class.getField("FLAG_NEEDS_MENU_KEY").getInt(null));
-        }catch (NoSuchFieldException e) {
-            // Ignore since this field won't exist in most versions of Android
-        }catch (IllegalAccessException e) {
-            Log.w("feelyou.info", "Could not access FLAG_NEEDS_MENU_KEY in addLegacyOverflowButton()", e);
-        }    */
 
         setPop(); //初始化POPUPWINDOW
         initVoiceSetPop();
@@ -224,9 +185,9 @@ public class ReadActivity extends Activity implements OnClickListener,
         // 提取记录在sharedpreferences的各种状态
         sp = getSharedPreferences("config", MODE_PRIVATE);
         editor = sp.edit();
-        getSize();// 获取配置文件中的size大小
-        getLight();// 获取配置文件中的light值
-        getDayOrNight();
+        fontsize = getSize();// 获取配置文件中的size大小
+        light = getLight();// 获取配置文件中的light值
+        isNight = getDayOrNight();
         count = sp.getLong(bookPath + "count", 1);
 
         lp = getWindow().getAttributes();
@@ -236,7 +197,6 @@ public class ReadActivity extends Activity implements OnClickListener,
         Intent intent = getIntent();
         bookPath = intent.getStringExtra("bookpath");
         bookName = intent.getStringExtra("bookname");
-        openPosition = intent.getIntExtra("openposition",0);
         ccc = intent.getStringExtra("ccc");
         begin1 = intent.getIntExtra("bigin", 0);
         if(begin1 == 0) {
@@ -254,9 +214,10 @@ public class ReadActivity extends Activity implements OnClickListener,
         //  pagefactory.setBgBitmap(BitmapFactory.decodeResource(this.getResources(), R.drawable.bg));
            // pagefactory.setBgBitmap(BookPageFactory.decodeSampledBitmapFromResource(
                  //   this.getResources(),R.drawable.bg,screenWidth,readHeight));
-            Bitmap bmp=Bitmap.createBitmap(screenWidth,screenHeight, Bitmap.Config.RGB_565);
-            Canvas canvas=new Canvas(bmp);
-            canvas.drawColor(Color.rgb(250, 249, 222));
+            Bitmap bmp = Bitmap.createBitmap(screenWidth,screenHeight, Bitmap.Config.RGB_565);
+            Canvas canvas = new Canvas(bmp);
+           // canvas.drawColor(Color.rgb(250, 249, 222));
+            canvas.drawColor(getResources().getColor(R.color.read_background_paperYellow));
             pagefactory.setM_textColor(getResources().getColor(R.color.read_textColor));
             pagefactory.setBgBitmap(bmp);
          //   pagefactory.setM_textColor(Color.rgb(28, 28, 28));
@@ -264,17 +225,17 @@ public class ReadActivity extends Activity implements OnClickListener,
         // 从指定位置打开书籍，默认从开始打开
         try {
             pagefactory.openbook(bookPath, begin);
-            pagefactory.setM_fontSize(size);
+            pagefactory.setM_fontSize(fontsize);
             pagefactory.onDraw(mCurPageCanvas);
             // Log.d("ReadActivity", "sp中的size" + size);
             word = pagefactory.getFirstTwoLineText();// 获取当前阅读位置的前两行文字,用作书签
             editor.putInt(bookPath + "begin", begin).apply();
-            Log.d("ReadActivity", "第一页首两行文字是" + word);
+           // Log.d("ReadActivity", "第一页首两行文字是" + word);
 
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    pagefactory.getBookInfo();
+                    pagefactory.getBookInfo();  //获取章节目录
                 }
             }).start();
         } catch (IOException e1) {
@@ -289,10 +250,12 @@ public class ReadActivity extends Activity implements OnClickListener,
             public boolean onTouch(View v, MotionEvent e) {
                 boolean ret = false;
                 if (v == mPageWidget) {
+
                         if (e.getAction() == MotionEvent.ACTION_DOWN) {
                             mPageWidget.abortAnimation();
                             mPageWidget.calcCornerXY(e.getX(), e.getY());
                             pagefactory.onDraw(mCurPageCanvas);
+                           // Log.d("ReadActivity","action_down");
                             int x = (int) e.getX();
                             int y = (int) e.getY();
                             //Action_Down时在中间位置显示菜单
@@ -352,7 +315,7 @@ public class ReadActivity extends Activity implements OnClickListener,
                                     }
                                     pagefactory.onDraw(mNextPageCanvas);
                                 }
-                            mPageWidget.setBitmaps(mCurPageBitmap, mNextPageBitmap);
+                           mPageWidget.setBitmaps(mCurPageBitmap, mNextPageBitmap);
                         }
                         editor.putInt(bookPath + "begin", begin).apply();
                         ret = mPageWidget.doTouchEvent(e);
@@ -362,8 +325,6 @@ public class ReadActivity extends Activity implements OnClickListener,
             }
         });
     }
-
-
 
     /**
      * 记录数据 并清空popupwindow
@@ -378,10 +339,10 @@ public class ReadActivity extends Activity implements OnClickListener,
     /**
      * 记录配置文件中字体大小
      */
-    private void setSize() {
+    private void setSize(int fontsize) {
         try {
-            size = seekBar1.getProgress() + 40;
-            editor.putInt("size", size);
+          //  fontsize = seekBar1.getProgress() + defaultFontSize;
+            editor.putInt("size", fontsize);
             editor.apply();
         } catch (Exception e) {
             Log.e(TAG, "setSize-> Exception error", e);
@@ -405,9 +366,8 @@ public class ReadActivity extends Activity implements OnClickListener,
     /**
      * 读取配置文件中亮度值
      */
-    private void getLight() {
-        light = sp.getInt("light", 3);
-
+    private int getLight() {
+        return sp.getInt("light", 3);
     }
 
    /**
@@ -428,22 +388,23 @@ public class ReadActivity extends Activity implements OnClickListener,
      }
 
     /**
-    *   获取夜间还是白天阅读模式
-    * */
-    private void getDayOrNight() {
-        isNight = sp.getBoolean("night", false);
+     * 获取夜间还是白天阅读模式
+     */
+    private boolean getDayOrNight() {
+        return sp.getBoolean("night", false);
     }
 
     /**
      * 读取配置文件中字体大小
      */
-    private void getSize() {
-        size = sp.getInt("size", defaultSize);
+    private int getSize() {
+      return sp.getInt("size", defaultFontSize);
     }
 
     /**
-    * 点击监听的处理
-    * */
+     * 点击监听的处理
+     * @param v
+     */
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -460,21 +421,6 @@ public class ReadActivity extends Activity implements OnClickListener,
             // 书签按钮
             case R.id.bookBtn_mark:
                 a = 3;
-                bookCatalogueList = BookPageFactory.getBookCatalogue();
-                bookCatalogueStartPosList = BookPageFactory.getBookCatalogueStartPos();
-                for(int i = 0;i<bookCatalogueList.size()-1;i++) {
-                    BookCatalogue bookCatalogue = new BookCatalogue();
-                    String catalogue = bookCatalogueList.get(i);
-                    int cataloguepos = bookCatalogueStartPosList.get(i);
-                  //  Log.d("catalogue---->", catalogue);
-                  //  Log.d("cataloguepos---->", cataloguepos + "");
-                  //     bookCatalogue.setBookCatalogue(catalogue);
-                 //   bookCatalogue.setBookCatalogueStartPos(cataloguepos);
-                 //   bookCatalogue.setBookpath(bookPath);
-                   // bookCatalogue.save();
-                 //   saveCatalogueToSqlite3(catalogue, cataloguepos, bookCatalogue);
-                }
-
                 setToolPop(a);
                 break;
             // 跳转按钮
@@ -483,7 +429,7 @@ public class ReadActivity extends Activity implements OnClickListener,
                 setToolPop(a);
                 jumpcencel_begin = begin;
                 break;
-            case R.id.text_speak:
+            case R.id.readSet:
                 a = 5;
              //   setToolPop(a);
                 break;
@@ -592,7 +538,7 @@ public class ReadActivity extends Activity implements OnClickListener,
             case R.id.listener_book:
                 // 设置参数
                 setParam();
-                Log.d("ReadActivity", "tts是否执行到这里");
+                //Log.d("ReadActivity", "tts是否执行到这里");
                 int code =  mTts.startSpeaking(words, mTtsListener);
 
                 if (code != ErrorCode.SUCCESS) {
@@ -626,17 +572,7 @@ public class ReadActivity extends Activity implements OnClickListener,
                     mPopupWindow.dismiss();
                     popDismiss();
                 }
-            /**    Intent upIntent = NavUtils.getParentActivityIntent(this);
-                if (NavUtils.shouldUpRecreateTask(this, upIntent)) {
-                    TaskStackBuilder.create(this)
-                            .addNextIntentWithParentStack(upIntent)
-                            .startActivities();
-                } else {
-                    upIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                    NavUtils.navigateUpTo(this, upIntent);
-                    Log.d("ReadActivity","is enter here");
-                }
-                finish();*/
+
                 KeyEvent newEvent = new KeyEvent(KeyEvent.ACTION_DOWN,
                         KeyEvent.KEYCODE_BACK);
                 onKeyDown(KeyEvent.KEYCODE_BACK, newEvent);
@@ -656,40 +592,29 @@ public class ReadActivity extends Activity implements OnClickListener,
 
     /**
      * 判断是从哪个界面进入的READ
+     * @param keyCode
+     * @param event
+     * @return
      */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch (keyCode) {
            case KeyEvent.KEYCODE_BACK :
 
-                if (ccc == null) {
-                    if (show) {// 如果popwindow正在显示
-                        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-                        show = false;
-                        mPopupWindow.dismiss();
-                        popDismiss();
-                    } else {
-                        ReadActivity.this.finish();
-                    }
-                } else {
-                    if (!ccc.equals("ccc")) {
-                        if (show) {// 如果popwindow正在显示
-                            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-                            show = false;
-                            mPopupWindow.dismiss();
-                            popDismiss();
-                        } else {
-                            this.finish();
-                        }
-                    } else {
-                        this.finish();
-                    }
-                }
+               if (show) {// 如果popwindow正在显示
+                   getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+                   show = false;
+                   mPopupWindow.dismiss();
+                   popDismiss();
+               } else {
+                   ReadActivity.this.finish();
+               }
+
 
                 if (!mPopupWindow.isShowing()) {
                     hideSystemUI();
                 } else {
-                    showSystemUI();
+                   // showSystemUI();
                 }
 
                 voiceListining = false;
@@ -697,11 +622,18 @@ public class ReadActivity extends Activity implements OnClickListener,
                     voicesetpop.dismiss();
                 }
             return true;
+           //音量加大及减小事件
            case KeyEvent.KEYCODE_VOLUME_UP:
+               if(!voiceListining && !show) {
+                   prePage();
+               }else
                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE,
                        AudioManager.FLAG_PLAY_SOUND | AudioManager.FLAG_SHOW_UI);
                return true;
            case KeyEvent.KEYCODE_VOLUME_DOWN:
+               if(!voiceListining && !show) {
+                   nextPage();
+               }else
                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER,
                        AudioManager.FLAG_PLAY_SOUND | AudioManager.FLAG_SHOW_UI);
                return true;
@@ -713,6 +645,9 @@ public class ReadActivity extends Activity implements OnClickListener,
 
     /**
      * 添加对menu按钮的监听
+     * @param keyCode
+     * @param event
+     * @return
      */
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
@@ -730,18 +665,21 @@ public class ReadActivity extends Activity implements OnClickListener,
     }
 
     /**
-    * 各种进度条变化设置
-    * */
+     * 各种进度条变化设置
+     * @param seekBar
+     * @param progress
+     * @param fromUser
+     */
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress,
                                   boolean fromUser) {
         switch (seekBar.getId()) {
             // 字体进度条
             case R.id.seekBar_size:
-                size = seekBar1.getProgress() + 40;
-                Log.d("ReadActivity","size的大小"+size);
-                setSize();
-                pagefactory.setM_fontSize(size);
+                fontsize = seekBar1.getProgress() + minFontSize;
+                //Log.d("ReadActivity","size的大小"+fontsize);
+                setSize(fontsize);
+                pagefactory.setM_fontSize(fontsize);
                 pagefactory.setM_mbBufBegin(begin);
                 pagefactory.setM_mbBufEnd(begin);
                 postInvalidateUI();
@@ -774,7 +712,7 @@ public class ReadActivity extends Activity implements OnClickListener,
                 }
                 postInvalidateUI();
                 break;
-            case R.id.text_speak:
+            case R.id.readSet:
 
                 break;
 
@@ -797,12 +735,17 @@ public class ReadActivity extends Activity implements OnClickListener,
     public void pop() {
 
         mPopupWindow.showAtLocation(mPageWidget, Gravity.NO_GRAVITY, 0, 0);
-        bookBtn1 = (TextView) popupwindwow.findViewById(R.id.bookBtn_size);
-        bookBtn2 = (TextView) popupwindwow.findViewById(R.id.bookBtn_light);
-        bookBtn3 = (TextView) popupwindwow.findViewById(R.id.bookBtn_mark);
-        bookBtn4 = (TextView) popupwindwow.findViewById(R.id.bookBtn_jump);
-        TextView button = (TextView) popupwindwow.findViewById(R.id.text_speak);
+        fontSize = (TextView) popupwindwow.findViewById(R.id.bookBtn_size);
+        readLight = (TextView) popupwindwow.findViewById(R.id.bookBtn_light);
+        bookMark = (TextView) popupwindwow.findViewById(R.id.bookBtn_mark);
+        readJump = (TextView) popupwindwow.findViewById(R.id.bookBtn_jump);
+        readSet = (TextView) popupwindwow.findViewById(R.id.readSet);
         layout = (LinearLayout) popupwindwow.findViewById(R.id.bookpop_bottom);//主要为了夜间模式时设置背景
+        fontSize.setTypeface(typeface);//设置字体
+        readLight.setTypeface(typeface);
+        bookMark.setTypeface(typeface);
+        readJump.setTypeface(typeface);
+        readSet.setTypeface(typeface);
 
         TextView blank_view = (TextView) popupwindwow.findViewById(R.id.blank_view);
         listener_book = (ImageButton) popupwindwow.findViewById(R.id.listener_book);
@@ -816,11 +759,11 @@ public class ReadActivity extends Activity implements OnClickListener,
             layout.setBackgroundResource(R.drawable.tmall_bar_bg);
             imageBtn_light.setImageResource(R.drawable.menu_daynight_icon);
         }
-        bookBtn1.setOnClickListener(this);
-        bookBtn2.setOnClickListener(this);
-        bookBtn3.setOnClickListener(this);
-        bookBtn4.setOnClickListener(this);
-        button.setOnClickListener(this);
+        fontSize.setOnClickListener(this);
+        readLight.setOnClickListener(this);
+        bookMark.setOnClickListener(this);
+        readJump.setOnClickListener(this);
+        readSet.setOnClickListener(this);
         blank_view.setOnClickListener(this);
         listener_book.setOnClickListener(this);
         pop_return.setOnClickListener(this);
@@ -870,18 +813,17 @@ public class ReadActivity extends Activity implements OnClickListener,
 
     }
 
-    /**
+   /**
     * 初始化语音朗读菜单popupwindow
-    * */
+    */
     private void initVoiceSetPop(){
         voiceSetView = this.getLayoutInflater().inflate(R.layout.voicesetmenu,null);
         voicesetpop = new PopupWindow(voiceSetView,LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT);
     }
-
-    /**
+   /**
     * 设置语音朗读菜单的显示
     *
-    * */
+    */
     private void setVoicesetpop(){
         voicesetpop.showAtLocation(mPageWidget,Gravity.BOTTOM,0,0);
         TextView play_pause = (TextView)voiceSetView.findViewById(R.id.play_pause);
@@ -918,8 +860,10 @@ public class ReadActivity extends Activity implements OnClickListener,
                     seekBar1 = (SeekBar) toolpop1.findViewById(R.id.seekBar_size);
                     fontBig = (TextView) toolpop1.findViewById(R.id.size_plus);
                     fontSmall = (TextView) toolpop1.findViewById(R.id.size_decrease);
-                    size = sp.getInt("size", 40);
-                    seekBar1.setProgress((size-40 ));
+                    fontBig.setTypeface(typeface);
+                    fontSmall.setTypeface(typeface);
+                    fontsize = sp.getInt("size", defaultFontSize);
+                    seekBar1.setProgress((fontsize-minFontSize));
                     seekBar1.setOnSeekBarChangeListener(this);
                     fontBig.setOnClickListener(this);
                     fontSmall.setOnClickListener(this);
@@ -934,6 +878,10 @@ public class ReadActivity extends Activity implements OnClickListener,
                     }else
                         mToolpop2.showAtLocation(mPageWidget, Gravity.BOTTOM, 0, 70*scale);
                     seekBar2 = (SeekBar) toolpop2.findViewById(R.id.seekBar_light);
+                    lightPlus = (TextView) toolpop2.findViewById(R.id.light_plus);
+                    linghtDecrease = (TextView) toolpop2.findViewById(R.id.light_decrease);
+                    lightPlus.setTypeface(typeface);
+                    linghtDecrease.setTypeface(typeface);
                     getLight();
                     seekBar2.setProgress(light);
                     seekBar2.setOnSeekBarChangeListener(this);
@@ -948,6 +896,8 @@ public class ReadActivity extends Activity implements OnClickListener,
                         mToolpop3.showAtLocation(mPageWidget, Gravity.BOTTOM, 0, 70*scale);
                     btn_mark_add = (TextView) toolpop3.findViewById(R.id.Btn_mark_add);
                     btn_mark_my = (TextView) toolpop3.findViewById(R.id.Btn_mark_my);
+                    btn_mark_add.setTypeface(typeface);
+                    btn_mark_my.setTypeface(typeface);
                     btn_mark_add.setOnClickListener(this);
                     btn_mark_my.setOnClickListener(this);
                 }
@@ -966,6 +916,9 @@ public class ReadActivity extends Activity implements OnClickListener,
                     jumpCancel = (TextView) toolpop4.findViewById(R.id.jump_cancel);
                     seekBar4 = (SeekBar) toolpop4.findViewById(R.id.seekBar_jump);
                     markEdit4 = (TextView) toolpop4.findViewById(R.id.markEdit4);
+                    jumpOk.setTypeface(typeface);
+                    jumpCancel.setTypeface(typeface);
+                    markEdit4.setTypeface(typeface);
                     // begin = sp.getInt(bookPath + "begin", 1);
                     float fPercent = (float) (begin * 1.0 / pagefactory.getM_mbBufLen());
                     DecimalFormat df = new DecimalFormat("#0");
@@ -1012,8 +965,10 @@ public class ReadActivity extends Activity implements OnClickListener,
                 seekBar1 = (SeekBar) toolpop1.findViewById(R.id.seekBar_size);
                 fontBig = (TextView) toolpop1.findViewById(R.id.size_plus);
                 fontSmall = (TextView) toolpop1.findViewById(R.id.size_decrease);
-                size = sp.getInt("size", 40);
-                seekBar1.setProgress(size - 40);
+                fontBig.setTypeface(typeface);
+                fontSmall.setTypeface(typeface);
+                fontsize = sp.getInt("size", defaultFontSize);
+                seekBar1.setProgress(fontsize - minFontSize);
                 seekBar1.setOnSeekBarChangeListener(this);
                 fontBig.setOnClickListener(this);
                 fontSmall.setOnClickListener(this);
@@ -1027,6 +982,10 @@ public class ReadActivity extends Activity implements OnClickListener,
                 }else
                     mToolpop2.showAtLocation(mPageWidget, Gravity.BOTTOM, 0, 70*scale);
                 seekBar2 = (SeekBar) toolpop2.findViewById(R.id.seekBar_light);
+                lightPlus = (TextView) toolpop2.findViewById(R.id.light_plus);
+                linghtDecrease = (TextView) toolpop2.findViewById(R.id.light_decrease);
+                lightPlus.setTypeface(typeface);
+                linghtDecrease.setTypeface(typeface);
                 getLight();
                 seekBar2.setProgress(light);
                 seekBar2.setOnSeekBarChangeListener(this);
@@ -1041,6 +1000,8 @@ public class ReadActivity extends Activity implements OnClickListener,
                     mToolpop3.showAtLocation(mPageWidget, Gravity.BOTTOM, 0, 70*scale);
                 btn_mark_add = (TextView) toolpop3.findViewById(R.id.Btn_mark_add);
                 btn_mark_my = (TextView) toolpop3.findViewById(R.id.Btn_mark_my);
+                btn_mark_add.setTypeface(typeface);
+                btn_mark_my.setTypeface(typeface);
                 btn_mark_add.setOnClickListener(this);
                 btn_mark_my.setOnClickListener(this);
             }
@@ -1057,6 +1018,9 @@ public class ReadActivity extends Activity implements OnClickListener,
                 jumpCancel = (TextView) toolpop4.findViewById(R.id.jump_cancel);
                 seekBar4 = (SeekBar) toolpop4.findViewById(R.id.seekBar_jump);
                 markEdit4 = (TextView) toolpop4.findViewById(R.id.markEdit4);
+                jumpOk.setTypeface(typeface);
+                jumpCancel.setTypeface(typeface);
+                markEdit4.setTypeface(typeface);
                 float fPercent = (float) (begin * 1.0 / pagefactory.getM_mbBufLen());
                 DecimalFormat df = new DecimalFormat("#0");
                 String strPercent = df.format(fPercent * 100) + "%";
@@ -1109,10 +1073,9 @@ public class ReadActivity extends Activity implements OnClickListener,
         mPageWidget.postInvalidate();
 
     }
-    /**合成参数设置
-    *
-    *
-    * */
+    /**
+    *  合成参数设置
+    */
     private void setParam(){
 
         mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD);
@@ -1173,6 +1136,7 @@ public class ReadActivity extends Activity implements OnClickListener,
                  //   mPercentForBuffering, mPercentForPlaying));
             if (mPercentForPlaying == 100) {
                 nextPage();
+                mTts.startSpeaking(words, mTtsListener);//当前页面结束开始下一阅读页面的语音播放
             }
         }
 
@@ -1180,6 +1144,7 @@ public class ReadActivity extends Activity implements OnClickListener,
         public void onCompleted(SpeechError error) {
             if (error == null) {
                 nextPage();
+                mTts.startSpeaking(words, mTtsListener);//当前页面结束开始下一阅读页面的语音播放
               //  showTip("播放完成");
             } else if (error != null) {
                 showTip(error.getPlainDescription(true));
@@ -1214,6 +1179,9 @@ public class ReadActivity extends Activity implements OnClickListener,
         }
     };
 
+    /**
+     * 隐藏菜单。沉浸式阅读
+     */
     private void hideSystemUI() {
         // Set the IMMERSIVE flag.
         // Set the content to appear under the system bars so that the content
@@ -1225,8 +1193,6 @@ public class ReadActivity extends Activity implements OnClickListener,
                         //  | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
                         | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                      //  | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                      //  | View.SYSTEM_UI_FLAG_IMMERSIVE
                         );
     }
 
@@ -1250,81 +1216,6 @@ public class ReadActivity extends Activity implements OnClickListener,
 
     public static Bitmap getmNextPageBitmap() {
         return mNextPageBitmap;
-    }
-
-    @Override
-    public void itemMoeToFirst() {
-        List<BookList> bookLists1 = new ArrayList<>();
-        bookLists1 = DataSupport.findAll(BookList.class);
-        int tempId = bookLists1.get(0).getId();
-        BookList temp = bookLists1.get(openPosition);
-        Log.d("openPosition is", "" + openPosition);
-        if(openPosition!=0) {
-            for (int i = openPosition; i > 0 ; i--) {
-                List<BookList> bookListsList = new ArrayList<>();
-                bookListsList = DataSupport.findAll(BookList.class);
-                int dataBasesId = bookListsList.get(i).getId();
-
-                Collections.swap(bookLists1, i, i - 1);
-                updateBookPosition(i, dataBasesId, bookLists1);
-            }
-
-            bookLists1.set(0, temp);
-            updateBookPosition(0, tempId, bookLists1);
-            for (int j = 0 ;j<bookLists1.size();j++) {
-                String bookpath = bookLists1.get(j).getBookpath();
-                Log.d("移动到第一位",bookpath);
-            }
-        }
-    }
-
-    /**
-     * 两个item数据交换结束后，把不需要再交换的item更新到数据库中
-     * @param position
-     * @param bookLists
-     */
-    public void updateBookPosition (int position,int databaseId,List<BookList> bookLists) {
-        BookList bookList = new BookList();
-        BookList bookList1 = new BookList();
-        String bookpath = bookLists.get(position).getBookpath();
-        String bookname = bookLists.get(position).getBookname();
-        bookList.setBookpath(bookpath);
-        bookList1.setBookname(bookname);
-        //开线程保存改动的数据到数据库
-        //使用litepal数据库框架update时每次只能update一个id中的一条信息，如果相同则不更新。
-        upDateBookToSqlite3(databaseId, bookList, bookList1);
-    }
-
-
-    public void upDateBookToSqlite3(final int databaseId,final BookList bookList,final BookList bookList1) {
-
-        putAsyncTask(new AsyncTask<Void, Void, Boolean>() {
-            @Override
-            protected void onPreExecute() {
-
-            }
-
-            @Override
-            protected Boolean doInBackground(Void... params) {
-                try {
-                    bookList.update(databaseId);
-                    bookList1.update(databaseId);
-                    Log.d("是否执行到保存数据库","这里");
-                } catch (DataSupportException e) {
-                    return false;
-                }
-                return true;
-            }
-
-            @Override
-            protected void onPostExecute(Boolean result) {
-                if (result) {
-
-                } else {
-                    Log.d("保存到数据库结果-->", "失败");
-                }
-            }
-        });
     }
 
     @Override
@@ -1371,12 +1262,37 @@ public class ReadActivity extends Activity implements OnClickListener,
         finish();
     }
 
+    /**
+     * 翻到上一页
+     */
+    public void prePage() {
+        mPageWidget.abortAnimation();
+        mPageWidget.calcCornerXY(10, screenHeight-10);//从左翻页
+        pagefactory.onDraw(mCurPageCanvas);
+        try {
+            pagefactory.prePage();
+            begin = pagefactory.getM_mbBufBegin();// 获取当前阅读位置
+            word = pagefactory.getFirstTwoLineText();// 获取当前阅读位置的首行文字
+        } catch (IOException e1) {
+            Log.e(TAG, "onTouch->prePage error", e1);
+        }
+        if (pagefactory.isfirstPage()) {
+            Toast.makeText(mContext, "当前是第一页", Toast.LENGTH_SHORT).show();
+        }else {
+            pagefactory.onDraw(mNextPageCanvas);
+            mPageWidget.setBitmaps(mCurPageBitmap, mNextPageBitmap);
+            editor.putInt(bookPath + "begin", begin).commit();
+            MotionEvent e = MotionEvent.obtain(0, 0, MotionEvent.ACTION_MOVE,
+                    20, screenHeight-20, 1);
+            mPageWidget.doTouchEvent(e);
+        }
+    }
      /**
-      * 语音朗读时自动翻页
-      * */
+      * 翻下一页
+      */
     public void nextPage() {
         mPageWidget.abortAnimation();
-        mPageWidget.calcCornerXY(700, 700);//从右翻页
+        mPageWidget.calcCornerXY(screenWidth-10, screenHeight-10);//从右翻页
         pagefactory.onDraw(mCurPageCanvas);
         try {
             pagefactory.nextPage();
@@ -1387,23 +1303,19 @@ public class ReadActivity extends Activity implements OnClickListener,
         }
         if (pagefactory.islastPage()) {
             Toast.makeText(mContext, "已经是最后一页了", Toast.LENGTH_SHORT).show();
-
         } else {
             pagefactory.onDraw(mNextPageCanvas);
-
             mPageWidget.setBitmaps(mCurPageBitmap, mNextPageBitmap);
             editor.putInt(bookPath + "begin", begin).commit();
             MotionEvent e = MotionEvent.obtain(0, 0, MotionEvent.ACTION_MOVE,
-                    427, 470, 1);
+                    screenWidth-20, screenHeight-20, 1);
             mPageWidget.doTouchEvent(e);
-
         }
-        mTts.startSpeaking(words, mTtsListener);//当前页面结束开始下一阅读页面的语音播放
-
+     //   mTts.startSpeaking(words, mTtsListener);//当前页面结束开始下一阅读页面的语音播放
     }
-    /*
+    /**
     *   设置转换动画  在5.0系统自身已经带有这种效果
-    * */
+    */
     @TargetApi(21)
     private void setupWindowAnimations() {
 
@@ -1417,47 +1329,12 @@ public class ReadActivity extends Activity implements OnClickListener,
 
     }
 
+    /**
+     * 获取书本存储路径
+     * @return
+     */
     public static String getBookPath() {
         return bookPath;
     }
 
-    public void putAsyncTask(AsyncTask<Void, Void, Boolean> asyncTask) {
-        myAsyncTasks.add(asyncTask.execute());
-    }
-
-    public void saveCatalogueToSqlite3(final String catalogue, final Integer pos,final BookCatalogue bookCatalogue) {
-
-        putAsyncTask(new AsyncTask<Void, Void, Boolean>() {
-            @Override
-            protected void onPreExecute() {
-
-            }
-
-            @Override
-            protected Boolean doInBackground(Void... params) {
-                try {
-                  //  String sql = "SELECT id FROM bookcatalogue WHERE bookcatalogue =? and bookCatalogueStartPos =?";
-                  //  Cursor cursor = DataSupport.findBySQL(sql, catalogue,pos+"");
-                  //  if (!cursor.moveToFirst()) {
-                        bookCatalogue.saveThrows();
-                    Log.d("保存次数测试", "成功");
-                  //  } else {
-                    //    return false;
-                  //  }
-                } catch (DataSupportException e) {
-                     return false;
-                }
-                return true;
-            }
-
-            @Override
-            protected void onPostExecute(Boolean result) {
-                if(result) {
-
-                }else {
-                    Log.d("保存到数据库结果-->","失败");
-                }
-            }
-        });
-    }
 }

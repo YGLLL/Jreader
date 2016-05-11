@@ -2,6 +2,7 @@ package com.example.jreader;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.NavUtils;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 import com.astuetz.PagerSlidingTabStrip;
 import com.example.jreader.adapter.MyPagerAdapter;
 import com.example.jreader.database.BookCatalogue;
+import com.example.jreader.util.CommonUtil;
 
 /**
  * Created by Administrator on 2016/1/6.
@@ -28,12 +30,15 @@ public class MarkActivity extends FragmentActivity implements View.OnClickListen
     private ImageButton button_back;
     private TextView title;
     private static String bookpath_intent,bookname_intent;
+    private Typeface typeface;
+
     @Override
         protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.markactivity);
         dm = getResources().getDisplayMetrics();
+        typeface = Typeface.createFromAsset(this.getAssets(),"font/QH.ttf");
         button_back = (ImageButton) findViewById(R.id.back);
         title = (TextView) findViewById(R.id.bookname);
         ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
@@ -45,8 +50,8 @@ public class MarkActivity extends FragmentActivity implements View.OnClickListen
         viewPager.setAdapter(new MyPagerAdapter(getSupportFragmentManager()));
         pagerSlidingTabStrip.setViewPager(viewPager);
         button_back.setOnClickListener(this);
-        title.setText(getFileNameNoEx(bookname_intent));
-
+        title.setText(bookname_intent);
+        title.setTypeface(typeface);
     }
 
     private void setTabsValue() {
@@ -63,6 +68,8 @@ public class MarkActivity extends FragmentActivity implements View.OnClickListen
         // 设置Tab标题文字的大小
         pagerSlidingTabStrip.setTextSize((int) TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP, 16, dm));
+        //设置Tab标题文字的字体
+        pagerSlidingTabStrip.setTypeface(typeface,0);
         // 设置Tab Indicator的颜色
         pagerSlidingTabStrip.setIndicatorColor(Color.parseColor("#45c01a"));
         // 设置选中Tab文字的颜色 (这是我自定义的一个方法)
@@ -86,19 +93,6 @@ public class MarkActivity extends FragmentActivity implements View.OnClickListen
         }
         finish();
 
-    }
-     /** 去掉文件扩展名
-     *
-     *
-     * */
-    public static String getFileNameNoEx (String filename) {
-        if ((filename != null) && (filename.length() > 0)) {
-            int dot = filename.lastIndexOf('.');
-            if ((dot >-1) && (dot < (filename.length()))) {
-                return filename.substring(0, dot);
-            }
-        }
-        return filename;
     }
 
     public static String getBookpath_intent(){
