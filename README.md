@@ -5,9 +5,6 @@
 ## DemoGif
 ![Alt Text](https://github.com/Focfa/Jreader/raw/master/screenshots/demogif.gif)
 
-## 文件选择界面
-![Alt Text](https://github.com/Focfa/Jreader/raw/master/screenshots/fileSelect1.png)
-
 
 #License
                   GNU GENERAL PUBLIC LICENSE
