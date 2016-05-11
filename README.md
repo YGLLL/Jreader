@@ -7,3 +7,4 @@
 ![Alt Text](https://github.com/Focfa/Jreader/raw/master/screenshots/demogif.gif)
 
 
+#License
