@@ -4,4 +4,7 @@
 #软件视图:
 ----------------
 ## DemoGif
- ![Alt Text](https://github.com/Focfa/Jreader/raw/master/screenshots/DemoGif.gif)
+ ![Alt Text](https://github.com/Focfa/Jreader/raw/master/screenshots/demogif.gif)
+
+## 本地文件界面
+ ![Alt Text](https://github.com/Focfa/Jreader/raw/master/screenshots/fielSelect.png)
