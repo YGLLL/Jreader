@@ -1,22 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="200dp"
-              android:background="@drawable/hend_background"
-              android:gravity="center"
-              android:orientation="vertical">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/top_background"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_alignParentTop="true"
+    android:layout_centerHorizontal="true"
+    android:gravity="bottom"
+    android:fitsSystemWindows="true"
+    android:orientation="horizontal">
 
     <ImageView
-        android:layout_width="125dp"
-        android:layout_height="125dp"
+        android:id="@+id/bg_img"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:scaleType="centerCrop"
-        android:src="@drawable/people" />
+        android:src="@drawable/hend_background"
+        android:layout_alignParentTop="true"
+        android:adjustViewBounds="true"/>
+
+    <com.makeramen.roundedimageview.RoundedImageView
+        android:id="@+id/user_avatar"
+        android:layout_height="48dp"
+        android:layout_width="48dp"
+        android:src="@drawable/ic_noavatar"
+        android:scaleType="fitXY"
+        app:riv_corner_radius="24dp"
+        app:riv_border_width="2dp"
+        app:riv_border_color="@color/white"
+        app:riv_mutate_background="true"
+        app:riv_oval="true"
+        android:layout_above="@+id/user_name"
+        android:layout_alignLeft="@+id/user_name"
+        android:layout_alignStart="@+id/user_name"
+        android:layout_marginBottom="8dp"
+        android:clickable="true"/>
 
     <TextView
-        android:layout_marginTop="15dp"
+        android:id="@+id/user_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="登录"
-        android:textColor="@android:color/white" />
+        android:text="未登录"
+        android:textSize="16sp"
+        android:textColor="@color/white"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginLeft="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="12dp"
+        android:layout_alignBottom="@+id/bg_img"
+        android:shadowColor="#000"
+        android:shadowDx="3.0"
+        android:shadowDy="3.0"
+        android:shadowRadius="2.0"
+        android:clickable="true"/>
 
-</LinearLayout>
+</RelativeLayout>

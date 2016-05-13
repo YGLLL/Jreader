@@ -1,37 +1,26 @@
 package com.example.jreader.adapter;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.jreader.DragGridListener;
-import com.example.jreader.MarkActivity;
 import com.example.jreader.R;
-import com.example.jreader.database.BookCatalogue;
 import com.example.jreader.database.BookList;
-import com.example.jreader.database.BookMarks;
-import com.example.jreader.util.CommonUtil;
-import com.example.jreader.view.BookView;
 import com.example.jreader.view.DragGridView;
-import com.example.jreader.view.MyGridView;
 
 import org.litepal.crud.DataSupport;
 import org.litepal.exceptions.DataSupportException;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 
 /**

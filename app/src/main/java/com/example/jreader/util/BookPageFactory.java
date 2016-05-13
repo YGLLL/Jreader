@@ -98,7 +98,7 @@ public class BookPageFactory {
         mBorderWidth = context.getResources().getDimension(R.dimen.reading_board_battery_border_width);
         marginWidth = (int) context.getResources().getDimension(R.dimen.readingMarginWidth);
         marginHeight = (int) context.getResources().getDimension(R.dimen.readingMarginHeight);
-        typeface = Typeface.createFromAsset(context.getAssets(), "font/XLS18030FHY.ftf.ttf");
+        typeface = Typeface.createFromAsset(context.getAssets(), "font/QH.ttf");
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);// 画笔
         mPaint.setTextAlign(Paint.Align.LEFT);// 左对齐
         mPaint.setTextSize(m_fontSize);// 字体大小

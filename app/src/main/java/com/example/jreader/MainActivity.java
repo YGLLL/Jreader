@@ -61,8 +61,6 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements Animation.AnimationListener {
     private DragGridView bookShelf;
-    private GridView gv;
-    private ArrayList<BookInformation> bilist;
     private MyDrawerLayout drawerLayout;
     private NavigationView navigationView;
     private List<BookList> bookLists;
@@ -70,19 +68,16 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
 
     private WindowManager mWindowManager;
     private AbsoluteLayout wmRootView;
-    private PopupWindow pop;
 
     private static TextView cover;
     private static ImageView content;
     private Typeface typeface;
     private float scaleTimes;
-    public static final int ANIMATION_DURATION = 1000;
+    public static final int ANIMATION_DURATION = 800;
     private int[] location = new int[2];
-    //private int[] firstLocation = new int[2];
     private static ContentScaleAnimation contentAnimation;
     private static Rotate3DAnimation coverAnimation;
 
-    private static boolean isFirstload = true;
     private int animationCount=0;  //动画加载计数器  0 默认  1一个动画执行完毕   2二个动画执行完毕
     private boolean mIsOpen = false;
     private int bookViewPosition;
@@ -138,12 +133,6 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
                     String bookname = bookLists.get(itemPosition).getBookname();
                     itemView = view;
                     itemTextView = (TextView) view.findViewById(R.id.imageView1);
-
-                    // Log.d("position is", "" + position);
-                    //itemView.setDrawingCacheEnabled(true);
-                    //coverBitmap = Bitmap.createBitmap(itemView.getDrawingCache());
-                    //itemView.destroyDrawingCache();
-
                     itemTextView.getLocationInWindow(location);
 
                     mWindowManager.addView(wmRootView, getDefaultWindowParams());
@@ -156,14 +145,12 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
                     cover.setTypeface(typeface);
                     int coverPadding = (int) CommonUtil.convertDpToPixel(getApplicationContext(), 10);
                     cover.setPadding(coverPadding, coverPadding, coverPadding, coverPadding);
-                    //cover = new ImageView(getApplicationContext());
-                    // cover.setImageBitmap(coverBitmap);
 
                     content = new ImageView(getApplicationContext());
-                    content.setBackgroundDrawable(getResources().getDrawable(R.drawable.open_book_bg));
-                    //  Bitmap bitmap = BookPageFactory.decodeSampledBitmapFromResource(getResources(),
-                    //         R.drawable.open_book_bg,itemTextView.getMeasuredWidth(),itemTextView.getMeasuredHeight());
-                    //  content.setImageBitmap(bitmap);
+                   // content.setBackgroundDrawable(getResources().getDrawable(R.drawable.open_book_bg));
+                    Bitmap contentBitmap = Bitmap.createBitmap(itemTextView.getMeasuredWidth(),itemTextView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+                    contentBitmap.eraseColor(getResources().getColor(R.color.read_background_paperYellow));
+                    content.setImageBitmap(contentBitmap);
 
                     AbsoluteLayout.LayoutParams params = new AbsoluteLayout.LayoutParams(
                             itemTextView.getLayoutParams());
@@ -404,7 +391,7 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
         if (mIsOpen && wmRootView!=null) {
             //因为书本打开后会移动到第一位置，所以要设置新的位置参数
             contentAnimation.setmPivotXValue(bookShelf.getFirstLocation()[0]);
-            contentAnimation.setmPivotYValue(bookShelf.getFirstLocation()[1]);//273是开始第一个item的y值,如果改变布局位置会不一样
+            contentAnimation.setmPivotYValue(bookShelf.getFirstLocation()[1]);
             coverAnimation.setmPivotXValue(bookShelf.getFirstLocation()[0]);
             coverAnimation.setmPivotYValue(bookShelf.getFirstLocation()[1]);
 
