@@ -89,7 +89,7 @@ public class ShelfAdapter extends BaseAdapter implements DragGridListener {
             }
 
            if (bilist.size() == 0) {
-              viewHolder.view.setBackgroundResource(R.drawable.cover_default_new);
+           //   viewHolder.view.setBackgroundResource(R.drawable.cover_default_new);
               viewHolder.view.setClickable(false);
               viewHolder.view.setVisibility(View.INVISIBLE);
               viewHolder.deleteItem_IB.setVisibility(View.INVISIBLE);
@@ -97,7 +97,7 @@ public class ShelfAdapter extends BaseAdapter implements DragGridListener {
             } else {
                 if(bilist.size()>position){
 
-                    viewHolder.view.setBackgroundResource(R.drawable.cover_default_new);
+                 //   viewHolder.view.setBackgroundResource(R.drawable.cover_default_new);
                     final String fileName = bilist.get(position).getBookname();
                     final String filePath = bilist.get(position).getBookpath();
                     viewHolder.view.setText(fileName);
@@ -118,7 +118,7 @@ public class ShelfAdapter extends BaseAdapter implements DragGridListener {
                     }
 
                 }else {
-                    viewHolder.view.setBackgroundResource(R.drawable.cover_default_new);
+                 //   viewHolder.view.setBackgroundResource(R.drawable.cover_default_new);
                     viewHolder.view.setClickable(false);
                     viewHolder.deleteItem_IB.setClickable(false);
                     viewHolder.view.setVisibility(View.GONE);

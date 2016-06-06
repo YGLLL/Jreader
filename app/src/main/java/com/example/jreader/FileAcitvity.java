@@ -1,11 +1,19 @@
 package com.example.jreader;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NavUtils;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -44,6 +52,7 @@ public class FileAcitvity extends AppCompatActivity {
     private ListView listView;
     private ImageButton returnBtn;
     private TextView titleView;
+    public static final int EXTERNAL_STORAGE_REQ_CODE = 10 ;
     private static FileAdapter adapter;
     private static HashMap<Integer,Boolean> isSelected;
     public static int checkNum1 = 0; // 记录选中的条目数量
@@ -60,11 +69,15 @@ public class FileAcitvity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.fileactivity_main);
+        getWindow().setBackgroundDrawable(null);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar2);
         setSupportActionBar(toolbar);                            //toolbar当actionbar使用
         toolbar.setNavigationIcon(R.drawable.return_button);//设置导航图标
         if(getSupportActionBar() != null) {
             getSupportActionBar().setTitle("导入图书");
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            checkPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE, EXTERNAL_STORAGE_REQ_CODE);
         }
         root = Environment.getExternalStorageDirectory();
         initView();
@@ -392,11 +405,50 @@ public class FileAcitvity extends AppCompatActivity {
 
     @Override
     protected void onRestart () {
-      //  Fileutil.folderNum = 0;
-      //  mapin.clear();
-      //  FileAcitvity.paths.clear();
+
         super.onRestart();
-        //Log.d("FileAcitvity", "onRestart");
+
     }
 
+    private void checkPermission (Activity thisActivity, String permission, int requestCode) {
+        //判断当前Activity是否已经获得了该权限
+        if(ContextCompat.checkSelfPermission(thisActivity,permission) != PackageManager.PERMISSION_GRANTED) {
+            //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
+            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
+                    permission)) {
+                Toast.makeText(this,"添加图书需要此权限，请允许",Toast.LENGTH_SHORT).show();
+                //进行权限请求
+                ActivityCompat.requestPermissions(thisActivity,
+                        new String[]{permission},
+                        requestCode);
+            } else {
+                //进行权限请求
+                ActivityCompat.requestPermissions(thisActivity,
+                        new String[]{permission},
+                        requestCode);
+            }
+        } else {
+
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case EXTERNAL_STORAGE_REQ_CODE: {
+                // 如果请求被拒绝，那么通常grantResults数组为空
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //申请成功，进行相应操作
+                    root = Environment.getExternalStorageDirectory();
+                    searchData(root.getAbsolutePath());
+                    addPath(root.getAbsolutePath());
+
+                } else {
+                    //申请失败，可以继续向用户解释。
+                }
+                return;
+            }
+        }
+    }
 }

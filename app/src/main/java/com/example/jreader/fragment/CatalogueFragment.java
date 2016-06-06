@@ -4,6 +4,7 @@ package com.example.jreader.fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.appcompat.R.anim;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -61,6 +62,7 @@ public class CatalogueFragment extends Fragment implements AdapterView.OnItemCli
         intent.putExtra("bookpath", bookPath);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
+        getActivity().overridePendingTransition(anim.abc_grow_fade_in_from_bottom, anim.abc_shrink_fade_out_from_bottom);
     }
 
     public static CatalogueFragment newInstance(String argument) {

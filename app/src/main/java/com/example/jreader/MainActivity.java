@@ -16,6 +16,7 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.ViewDragHelper;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.appcompat.R.anim;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Gravity;
@@ -103,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
           //  getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
         }
         setContentView(R.layout.activity_main1);
+        getWindow().setBackgroundDrawable(null);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);                            //toolbar当actionbar使用
         toolbar.setNavigationIcon(R.drawable.ic_menu_white_24dp);//设置导航图标
@@ -368,7 +370,7 @@ public class MainActivity extends AppCompatActivity implements Animation.Animati
                 intent.putExtra("bookpath", bookpath);
                 intent.putExtra("bookname", bookname);
                 startActivity(intent);
-
+                overridePendingTransition(anim.abc_grow_fade_in_from_bottom, anim.abc_shrink_fade_out_from_bottom);
             }
 
         } else {

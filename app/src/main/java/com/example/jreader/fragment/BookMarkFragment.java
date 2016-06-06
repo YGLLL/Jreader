@@ -1,6 +1,7 @@
 package com.example.jreader.fragment;
 
 import android.app.ActionBar;
+import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Canvas;
@@ -9,6 +10,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.appcompat.R.anim;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -77,6 +79,7 @@ public class BookMarkFragment extends Fragment implements View.OnClickListener,A
                 intent.putExtra("bookpath", bookpath);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
+                getActivity().overridePendingTransition(anim.abc_grow_fade_in_from_bottom,anim.abc_shrink_fade_out_from_bottom);
             }
     }
 
